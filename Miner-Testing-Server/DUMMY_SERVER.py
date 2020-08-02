@@ -5,12 +5,16 @@ import json
 import math
 from random import randrange
 import socket
+import os
+# import numpy as np
 
+MAP_DIR = "../Miner-Training-Local-CodeSample/Maps/"
+MAP_ID = 3
 MAP = "[[0,0,-2,100,0,0,-1,-1,-3,0,0,0,-1,-1,0,0,-3,0,-1,-1,0],[-1,-1,-2,0,0,0,-3,-1,0,-2,0,0,0,-1,0,-1,0,-2,-1,0,0],[0,0,-1,0,0,0,0,-1,-1,-1,0,0,100,0,0,0,0,50,-2,0,0],[0,0,0,0,-2,0,0,0,0,0,0,0,-1,50,-2,0,0,-1,-1,0,0],[-2,0,200,-2,-2,300,0,0,-2,-2,0,0,-3,0,-1,0,0,-3,-1,0,0],[0,-1,0,0,0,0,0,-3,0,0,-1,-1,0,0,0,0,0,0,-2,0,0],[0,-1,-1,0,0,-1,-1,0,0,700,-1,0,0,0,-2,-1,-1,0,0,0,100],[0,0,0,500,0,0,-1,0,-2,-2,-1,-1,0,0,-2,0,-3,0,0,-1,0],[-1,-1,0,-2,0,-1,-2,0,400,-2,-1,-1,500,0,-2,0,-3,100,0,0,0]]"
 POS_X = 0
 POS_Y = 0
 E = 50
-MAX_STEP = 100
+MAX_STEP = 200
 W = 21
 H = 9
 
@@ -107,14 +111,21 @@ class StepState:
 class GameSocket:
     bog_energy_chain = {-5: -20, -20: -40, -40: -100, -100: -100}
 
-    def __init__(self):
+    def __init__(self, map):
         self.stepCount = 0
         self.maxStep = MAX_STEP
         self.userMatch = UserMatch()
         self.user = PlayerInfo(1)
         self.stepState = StepState()
         # running map info: 0->Land, -1->Forest, -2->Trap, -3:Swamp, >0:Gold
-        self.map = json.loads(MAP)
+        # for filename in os.listdir(MAP_DIR):
+        #     print(filename)
+        #     if filename == "map" + str(MAP_ID):
+        #         with open(os.path.join(MAP_DIR, filename), 'r') as f:
+        #             self.map = json.loads(f.read())
+                    # self.maps[filename] = f.read()
+        # self.map = json.loads(MAP)
+        self.map = map
         # self.energyOnMap[x][y]: <0, amount of energy which player will consume if it move into (x,y)
         self.energyOnMap = json.loads(MAP)
         self.E = E
@@ -133,6 +144,7 @@ class GameSocket:
 
     def init_map(self):  # load map info
         i = 0
+        totalGold = 0
         while i < len(self.map):
             j = 0
             while j < len(self.map[i]):
@@ -142,6 +154,7 @@ class GameSocket:
                     g.posy = i
                     g.amount = self.map[i][j]
                     self.userMatch.gameinfo.golds.append(g)
+                    totalGold += g.amount
                 else:  # obstacles
                     o = ObstacleInfo()
                     o.posx = j
@@ -151,6 +164,7 @@ class GameSocket:
                     self.userMatch.gameinfo.obstacles.append(o)
                 j += 1
             i += 1
+        print("Total gold on map: ", totalGold)
         self.stepState.golds = self.userMatch.gameinfo.golds
         for x in range(len(self.map)):
             for y in range(len(self.map[x])):
@@ -345,7 +359,12 @@ if __name__ == "__main__":
 
     HOST = "localhost"
     # PORT = int(sys.argv[1])
-    PORT = 37313
+    PORT = 49998
+
+    for filename in os.listdir(MAP_DIR):
+        if filename == "map" + str(MAP_ID):
+            with open(os.path.join(MAP_DIR, filename), 'r') as f:
+                map = json.loads(f.read())
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     print('# Socket created')
@@ -356,11 +375,10 @@ if __name__ == "__main__":
         print('# Bind failed. ')
         sys.exit()
     s.listen(10)
-    # whi
     conn, addr = s.accept()
     print('# Connected to ' + addr[0] + ':' + str(addr[1]))
 
-    game = GameSocket()
+    game = GameSocket(map)
     game.setup()
     conn.send(bytes(game.get_game_info(), "utf-8"))
     while game.user.status == 0:

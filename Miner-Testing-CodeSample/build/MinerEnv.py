@@ -38,7 +38,7 @@ class MinerEnv:
     def reset(self):  # start new game
         try:
             message = self.socket.receive()  # receive game info from server
-            print(message)
+            # print(message)
             self.state.init_state(message)  # init state
         except Exception as e:
             import traceback
@@ -50,14 +50,11 @@ class MinerEnv:
             message = self.socket.receive()  # receive new state from server
             # print("New state: ", message)
             self.state.update_state(message)  # update to local state
-            print("Current gold and energy:",
-                  self.state.score, self.state.energy)
-
         except Exception as e:
             import traceback
             traceback.print_exc()
 
-    def legalAction(self, state):
+    def legalAction(self):
         action = [0, 1, 2, 3]
         if self.state.x == self.state.mapInfo.max_x:
             action.remove(1)
@@ -67,62 +64,77 @@ class MinerEnv:
             action.remove(3)
         elif self.state.y == 0:
             action.remove(2)
-        # if self.state.energy <= 4 or self.state.mapInfo.gold_amount(self.state.x, self.state.y) == 0:
-        #     action.remove(5)
         return action
 
-    def get_successor(self, state, action, params):
+    def get_successor(self, action, params):
         newX, newY, newEnergy = self.state.x, self.state.y, self.state.energy
-        if action == 4:
-            self.sleepCount += 1
-            newEnergy += self.sleepBonus[self.sleepCount]
-            newEnergy = min(50, newEnergy)
+        # if action == 4:
+        #     self.sleepCount += 1
+        #     newEnergy += self.sleepBonus[self.sleepCount]
+        #     newEnergy = min(50, newEnergy)
+        # else:
+        #     self.sleepCount = -1
+        if action == 0:
+            newX -= 1
+            newParams, deltaE = self.estimateChange(newX, newY, params)
+            newEnergy += deltaE
+        elif action == 1:
+            newX += 1
+            newParams, deltaE = self.estimateChange(newX, newY, params)
+            newEnergy += deltaE
+        elif action == 2:
+            newY -= 1
+            newParams, deltaE = self.estimateChange(newX, newY, params)
+            newEnergy += deltaE
+        elif action == 3:
+            newY += 1
+            newParams, deltaE = self.estimateChange(newX, newY, params)
+            newEnergy += deltaE
         else:
-            self.sleepCount = -1
-            if action == 0:
-                newX -= 1
-                newParams, deltaE = self.estimateChange(newX, newY, params)
-                newEnergy += deltaE
-            elif action == 1:
-                newX += 1
-                newParams, deltaE = self.estimateChange(newX, newY, params)
-                newEnergy += deltaE
-            elif action == 2:
-                newY -= 1
-                newParams, deltaE = self.estimateChange(newX, newY, params)
-                newEnergy += deltaE
-            elif action == 3:
-                newY += 1
-                newParams, deltaE = self.estimateChange(newX, newY, params)
-                newEnergy += deltaE
-            else:
-                newEnergy -= 4
+            newEnergy -= 4
         return newX, newY, newEnergy, newParams
 
     def estimateChange(self, i, j, params):
-        if self.state.mapInfo.get_obstacle(i, j) == TreeID:  # Tree
-            return params, -20
-        if self.state.mapInfo.get_obstacle(i, j) == TrapID:  # Trap
-            return params, -10
-        if self.state.mapInfo.get_obstacle(i, j) == SwampID:
-            if params['swampCount'] < 3:
-                params['swampCount'] += 1  # Swamp
-            return params, self.swampPen[self.swampCount]
         if self.state.mapInfo.gold_amount(i, j) > 0:
             return params, -4
-        return params, -1
+        typeOb, penaltyOb = self.state.mapInfo.get_obstacle_and_penalty(i, j)
+        
+        # for RLCOMP
+        # if typeOb == TreeID:
+        #     return params, -20
+
+        # for Test:
+        if typeOb == TreeID:
+            return params, -3
+        if typeOb == TrapID:
+            return params, -2
+        if typeOb == SwampID:
+            return params, -3
+        return params, penaltyOb
+
+        # if self.state.mapInfo.get_obstacle(i, j) == TreeID:  # Tree
+        #     return params, -20
+        # if self.state.mapInfo.get_obstacle(i, j) == TrapID:  # Trap
+        #     return params, -10
+        # if self.state.mapInfo.get_obstacle(i, j) == SwampID:
+        #     if params['swampCount'] < 3:
+        #         params['swampCount'] += 1  # Swamp
+        #     return params, self.swampPen[self.swampCount]
+        # if self.state.mapInfo.gold_amount(i, j) > 0:
+        #     return params, -4
+        # return params, -1
 
     def estimateReceivedGold(self, x, y):
-        print("Gold Array:", self.state.mapInfo.golds)
-        print("pos:", x, y)
+        # print("Gold Array:", self.state.mapInfo.golds)
+        # print("pos:", x, y)
         initGold = self.state.mapInfo.gold_amount(x, y)
-        print("Init gold:", initGold)
+        # print("Init gold:", initGold)
         if initGold <= 0:
             return 0
         countPlayer = 0
         for player in self.state.players:
             if player["playerId"] != self.state.id:
-                if player["posx"] == x and player["posy"] == y:
+                if player["posx"] == x and player["posy"] == y and player["energy"] > 5:
                     countPlayer += 1
 
         if countPlayer == 0:
@@ -132,42 +144,120 @@ class MinerEnv:
         return initGold // countPlayer
 
     def get_action(self):
-        actions = self.legalAction(self.state)
+        actions = self.legalAction()
         params = {"swampCount": self.swampCount}
         bestValue = -10000
         bestAction = None
-        energyOfBest = -100
+        energyOfBest = self.state.energy
 
         # if self.state.mapInfo.gold_amount(self.state.x, self.state.y) > 0:
         # print("Estimate Gold:", self.estimateReceivedGold(
         #     self.state.x, self.state.y))
+
+        ''' check gold to dig '''
         if self.estimateReceivedGold(self.state.x, self.state.y) >= 50:
             bestAction = 5
             energyOfBest = self.state.energy - 5
         else:
             for action in actions:
-                posX, posY, energy, params = self.get_successor(
-                    self.state, action, params)
-                value = self.evaluationFunc(
-                    posX, posY, energy, self.state.mapInfo.golds, self.state.mapInfo.obstacles, params)
+                print("try action: ", action)
+                posx, posy, energy, params = self.get_successor(action, params)
+                value = self.new_evaluationFunc(posx, posy)
+                # value = self.evaluationFunc(
+                #     posX, posY, energy, self.state.mapInfo.golds, self.state.mapInfo.obstacles, params)
                 if value > bestValue:
                     bestValue = value
                     bestAction = action
                     energyOfBest = energy
-                print("-------------------------")
-            print("Best action:", bestAction, energyOfBest)
-            print(
-                "###########################################################################")
+                # print("-------------------------")
+        print("Best action:", bestAction, energyOfBest)
+
         # print("Best action:", bestAction)
 
         if not self.isSleeping and energyOfBest <= 0:
             self.isSleeping = True
             return 4
-        elif self.isSleeping and self.state.energy < 48:
+        elif self.isSleeping and self.state.energy < 40:
             return 4
         self.isSleeping = False
 
         return bestAction
+
+    def estimatePathCost(self, startx, starty, endx, endy):
+        print(self.state.mapInfo.map)
+        hstep = 1 if endx > startx else -1
+        vstep = 1 if endy > starty else -1
+        i, j = startx, starty
+        totalCostHL, totalCostLH = 0, 0
+        # ngang roi doc
+        hcost, vcost = 0, 0
+        print("ngang roi doc")
+        while(True):
+            print("Debug", i, j, self.state.mapInfo.get_cell_cost(i, j))
+            hcost += self.state.mapInfo.get_cell_cost(i, j)
+            if i == endx:
+                break
+            i += hstep
+        if j == endy:
+            totalCostHL =  hcost
+        else:
+            j += vstep
+            while(True):
+                print("Debug", i, j, self.state.mapInfo.get_cell_cost(i, j))
+                vcost += self.state.mapInfo.get_cell_cost(i, j)
+                if j == endy:
+                    break
+                j += vstep
+            totalCostHL = hcost + vcost
+
+        # doc roi ngang
+        print("doc roi ngang")
+        hcost, vcost = 0, 0
+        i, j = startx, starty
+        while(True):
+            print("Debug", i, j, self.state.mapInfo.get_cell_cost(i, j))
+            vcost += self.state.mapInfo.get_cell_cost(i, j)
+            if j == endy:
+                break
+            j += vstep
+        if i == endx:
+            totalCostLH =  vcost
+        else:
+            i += hstep
+            while(True):
+                print("Debug", i, j, self.state.mapInfo.get_cell_cost(i, j))
+                hcost += self.state.mapInfo.get_cell_cost(i, j)
+                if i == endx:
+                    break
+                i += hstep
+            totalCostLH = hcost + vcost
+
+        return min(totalCostHL, totalCostLH)
+
+    def new_evaluationFunc(self, posx, posy):
+        def mahattan(x1, y1, x2, y2):
+            return abs(x1-x2) + abs(y1 - y2)
+        
+        if self.state.mapInfo.get_cell_cost(posx, posy) >= 40:
+            return 50
+        elif self.state.mapInfo.get_cell_cost(posx, posy) >= 50:
+            return 5 # no hope
+
+        maxGoldScore = 0
+        goldPos = None
+        ''' estimate gold '''
+        for gold in self.state.mapInfo.golds:
+            distance = mahattan(posx, posy, gold["posx"], gold["posy"])
+            distance = 10 if distance > 10 else distance
+            goldScore = (10 - distance) * 150 + gold["amount"]
+            if maxGoldScore < goldScore:
+                goldPos = gold
+                maxGoldScore = goldScore
+
+        pathScore = self.estimatePathCost(posx, posy, goldPos["posx"], goldPos["posy"])
+        print("Goldscore:", maxGoldScore, goldPos["posx"], goldPos["posy"], goldPos["amount"])
+        print("PathScore:", pathScore)
+        return maxGoldScore - pathScore * 30
 
     def evaluationFunc(self, posX, posY, energy, golds, obstacles, params):
         def mahattan(x1, y1, x2, y2):
@@ -208,11 +298,11 @@ class MinerEnv:
             #                                      gold[0], gold[1])) + (1-alpha)*gold[2])
                 goldPosX = gold[0]
                 goldPosY = gold[1]
-        print("Gold position:", goldPosX, goldPosY)
-        print("Self position:", self.state.x, self.state.y)
+        # print("Gold position:", goldPosX, goldPosY)
+        # print("Self position:", self.state.x, self.state.y)
         # score = max(score, (5 * alpha/(0.1+mahattan(posX, posY,
         #                                             gold[0], gold[1])) + (1-alpha)*gold[2]))
-        print("Score, penaltyScore:", score, penaltyScore)
+        # print("Score, penaltyScore:", score, penaltyScore)
         return score
     # Functions are customized by client
 
