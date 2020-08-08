@@ -55,7 +55,14 @@ class MinerEnv:
             traceback.print_exc()
 
     def legalAction(self):
+        temp_action = [0, 1, 2, 3]
         action = [0, 1, 2, 3]
+        currX, currY = self.state.x, self.state.y
+        newPos = [(currX - 1, currY), (currX + 1, currY),
+                  (currX, currY - 1), (currX, currY + 1)]
+        for index in range(len(newPos)):
+            if self.state.mapInfo.get_cell_cost(newPos[index][0], newPos[index][1]) == 100:
+                action.remove(temp_action[index])
         if self.state.x == self.state.mapInfo.max_x:
             action.remove(1)
         elif self.state.x == 0:
@@ -98,31 +105,31 @@ class MinerEnv:
         if self.state.mapInfo.gold_amount(i, j) > 0:
             return params, -4
         typeOb, penaltyOb = self.state.mapInfo.get_obstacle_and_penalty(i, j)
-        
+
         # for RLCOMP
         # if typeOb == TreeID:
         #     return params, -20
 
         # for Test:
-        if typeOb == TreeID:
-            return params, -3
-        if typeOb == TrapID:
-            return params, -2
-        if typeOb == SwampID:
-            return params, -3
-        return params, penaltyOb
+        # if typeOb == TreeID:
+        #     return params, -3
+        # if typeOb == TrapID:
+        #     return params, -2
+        # if typeOb == SwampID:
+        #     return params, -3
+        # return params, penaltyOb
 
-        # if self.state.mapInfo.get_obstacle(i, j) == TreeID:  # Tree
-        #     return params, -20
-        # if self.state.mapInfo.get_obstacle(i, j) == TrapID:  # Trap
-        #     return params, -10
-        # if self.state.mapInfo.get_obstacle(i, j) == SwampID:
-        #     if params['swampCount'] < 3:
-        #         params['swampCount'] += 1  # Swamp
-        #     return params, self.swampPen[self.swampCount]
-        # if self.state.mapInfo.gold_amount(i, j) > 0:
-        #     return params, -4
-        # return params, -1
+        if self.state.mapInfo.get_obstacle(i, j) == TreeID:  # Tree
+            return params, -20
+        if self.state.mapInfo.get_obstacle(i, j) == TrapID:  # Trap
+            return params, -10
+        if self.state.mapInfo.get_obstacle(i, j) == SwampID:
+            if self.swampCount < 3:
+                self.swampCount += 1  # Swamp
+            return params, self.swampPen[self.swampCount]
+        if self.state.mapInfo.gold_amount(i, j) > 0:
+            return params, -4
+        return params, -1
 
     def estimateReceivedGold(self, x, y):
         # print("Gold Array:", self.state.mapInfo.golds)
@@ -199,7 +206,7 @@ class MinerEnv:
                 break
             i += hstep
         if j == endy:
-            totalCostHL =  hcost
+            totalCostHL = hcost
         else:
             j += vstep
             while(True):
@@ -221,7 +228,7 @@ class MinerEnv:
                 break
             j += vstep
         if i == endx:
-            totalCostLH =  vcost
+            totalCostLH = vcost
         else:
             i += hstep
             while(True):
@@ -237,11 +244,11 @@ class MinerEnv:
     def new_evaluationFunc(self, posx, posy):
         def mahattan(x1, y1, x2, y2):
             return abs(x1-x2) + abs(y1 - y2)
-        
+
         if self.state.mapInfo.get_cell_cost(posx, posy) >= 40:
             return 50
         elif self.state.mapInfo.get_cell_cost(posx, posy) >= 50:
-            return 5 # no hope
+            return 5  # no hope
 
         maxGoldScore = 0
         goldPos = None
@@ -254,8 +261,10 @@ class MinerEnv:
                 goldPos = gold
                 maxGoldScore = goldScore
 
-        pathScore = self.estimatePathCost(posx, posy, goldPos["posx"], goldPos["posy"])
-        print("Goldscore:", maxGoldScore, goldPos["posx"], goldPos["posy"], goldPos["amount"])
+        pathScore = self.estimatePathCost(
+            posx, posy, goldPos["posx"], goldPos["posy"])
+        print("Goldscore:", maxGoldScore,
+              goldPos["posx"], goldPos["posy"], goldPos["amount"])
         print("PathScore:", pathScore)
         return maxGoldScore - pathScore * 30
 

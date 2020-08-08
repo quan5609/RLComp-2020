@@ -26,24 +26,24 @@ class MapInfo:
         self.map = [[0]*gameInfo["height"] for i in range(gameInfo["width"])]
         for ob in self.obstacles:
             # for RLCOMP
-            # if ob["type"] == 0:
-            #     self.map[ob["posx"]][ob["posy"]] = 1
-            # elif ob["type"] == 1:
-            #     self.map[ob["posx"]][ob["posy"]] = 13
-            # elif ob["type"] == 2:
-            #     self.map[ob["posx"]][ob["posy"]] = 10
-            # elif ob["type"] == 3:
-            #     self.map[ob["posx"]][ob["posy"]] = -ob["value"]
-
-            # for TEST
             if ob["type"] == 0:
                 self.map[ob["posx"]][ob["posy"]] = 1
             elif ob["type"] == 1:
-                self.map[ob["posx"]][ob["posy"]] = 3
+                self.map[ob["posx"]][ob["posy"]] = 13
             elif ob["type"] == 2:
-                self.map[ob["posx"]][ob["posy"]] = 2
+                self.map[ob["posx"]][ob["posy"]] = 10
             elif ob["type"] == 3:
-                self.map[ob["posx"]][ob["posy"]] = 3
+                self.map[ob["posx"]][ob["posy"]] = -ob["value"]
+
+            # for TEST
+            # if ob["type"] == 0:
+            #     self.map[ob["posx"]][ob["posy"]] = 1
+            # elif ob["type"] == 1:
+            #     self.map[ob["posx"]][ob["posy"]] = 3
+            # elif ob["type"] == 2:
+            #     self.map[ob["posx"]][ob["posy"]] = 2
+            # elif ob["type"] == 3:
+            #     self.map[ob["posx"]][ob["posy"]] = 3
         for gold in self.golds:
             self.map[gold["posx"]][gold["posy"]] = 4
 
@@ -123,7 +123,7 @@ class MapInfo:
         for cell in self.obstacles:
             if x == cell["posx"] and y == cell["posy"]:
                 return cell["type"], cell["value"]
-        return -1, 0
+        return -1, -1
 
 
 class State:
