@@ -51,24 +51,24 @@ class MapInfo:
         self.golds = golds
         for cob in changedObstacles:
             # for RLCOMP
-            # if cob["type"] == 0:
-            #     self.map[cob["posx"]][cob["posy"]] = 1
-            # elif cob["type"] == 1:
-            #     self.map[cob["posx"]][cob["posy"]] = 13
-            # elif cob["type"] == 2:
-            #     self.map[cob["posx"]][cob["posy"]] = 10
-            # elif cob["type"] == 3:
-                # self.map[cob["posx"]][cob["posy"]] = -cob["value"]
+            if cob["type"] == 0:
+                self.map[cob["posx"]][cob["posy"]] = 1
+            elif cob["type"] == 1:
+                self.map[cob["posx"]][cob["posy"]] = 13
+            elif cob["type"] == 2:
+                self.map[cob["posx"]][cob["posy"]] = 10
+            elif cob["type"] == 3:
+                self.map[cob["posx"]][cob["posy"]] = -cob["value"]
 
             # for TEST
-            if ob["type"] == 0:
-                self.map[ob["posx"]][ob["posy"]] = 1
-            elif ob["type"] == 1:
-                self.map[ob["posx"]][ob["posy"]] = 3
-            elif ob["type"] == 2:
-                self.map[ob["posx"]][ob["posy"]] = 2
-            elif ob["type"] == 3:
-                self.map[ob["posx"]][ob["posy"]] = 3
+            # if ob["type"] == 0:
+            #     self.map[ob["posx"]][ob["posy"]] = 1
+            # elif ob["type"] == 1:
+            #     self.map[ob["posx"]][ob["posy"]] = 3
+            # elif ob["type"] == 2:
+            #     self.map[ob["posx"]][ob["posy"]] = 2
+            # elif ob["type"] == 3:
+            #     self.map[ob["posx"]][ob["posy"]] = 3
             newOb = True
             for ob in self.obstacles:
                 if cob["posx"] == ob["posx"] and cob["posy"] == ob["posy"]:
@@ -111,8 +111,6 @@ class MapInfo:
         if x < 0 or x > self.max_x or y < 0 or y > self.max_y:
             return -1
         return self.map[x][y]
-        
-        
 
     def get_obstacle(self, x, y):  # Getting the kind of the obstacle at cell(x,y)
         for cell in self.obstacles:
@@ -120,11 +118,13 @@ class MapInfo:
                 return cell["type"]
         return -1  # No obstacle at the cell (x,y)
 
-    def get_obstacle_and_penalty(self, x, y):  # Getting the kind of the obstacle at cell(x,y)
+    # Getting the kind of the obstacle at cell(x,y)
+    def get_obstacle_and_penalty(self, x, y):
         for cell in self.obstacles:
             if x == cell["posx"] and y == cell["posy"]:
                 return cell["type"], cell["value"]
         return -1, 0
+
 
 class State:
     STATUS_PLAYING = 0
@@ -175,9 +175,8 @@ class State:
                 self.score = player["score"]
                 self.lastAction = player["lastAction"]
                 self.status = player["status"]
-            elif player["status"] == 0: # still playing
+            elif player["status"] == 0:  # still playing
                 self.players.append(player)
-
 
         self.mapInfo.update(new_state["golds"], new_state["changedObstacles"])
         # self.players = new_state["players"]
