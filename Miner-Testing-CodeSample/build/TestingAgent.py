@@ -43,7 +43,8 @@ try:
         try:
             print("#################################################################")
             action = minerEnv.get_action()
-            print("At step %d:\n\tCurrent gold: %d\n\tCurrent energy: %d\n\tAction: %s" % (count_step, minerEnv.state.score, minerEnv.state.energy,action_map[action]))
+            print("At step %d:\n\tCurrent gold: %d\n\tCurrent energy: %d\n\tAction: %s" % (
+                count_step, minerEnv.state.score, minerEnv.state.energy, action_map[action]))
             minerEnv.step(str(action))
             # s_next = minerEnv.get_state()  # Getting a new state
             # s = s_next
@@ -56,7 +57,8 @@ try:
             print("Finished.")
             break
     minerEnv.end()
-    print("After finish:\n\tEnd status: %s\n\tTotal step: %d" % (status_map[minerEnv.state.status],count_step))
+    print("After finish:\n\tEnd status: %s\n\tTotal step: %d" %
+          (status_map[minerEnv.state.status], count_step))
 
 except Exception as e:
     import traceback
