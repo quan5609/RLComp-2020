@@ -23,13 +23,13 @@ class MapInfo:
         self.maxStep = gameInfo["steps"]
         self.numberOfPlayers = gameInfo["numberOfPlayers"]
         # print(gameInfo["width"], gameInfo["height"])
-        self.map = [[0]*gameInfo["height"] for i in range(gameInfo["width"])]
+        self.map = [[1]*gameInfo["height"] for i in range(gameInfo["width"])]
         for ob in self.obstacles:
             # for RLCOMP
             if ob["type"] == 0:
                 self.map[ob["posx"]][ob["posy"]] = 1
             elif ob["type"] == 1:
-                self.map[ob["posx"]][ob["posy"]] = 13
+                self.map[ob["posx"]][ob["posy"]] = 20
             elif ob["type"] == 2:
                 self.map[ob["posx"]][ob["posy"]] = 10
             elif ob["type"] == 3:
@@ -54,7 +54,7 @@ class MapInfo:
             if cob["type"] == 0:
                 self.map[cob["posx"]][cob["posy"]] = 1
             elif cob["type"] == 1:
-                self.map[cob["posx"]][cob["posy"]] = 13
+                self.map[cob["posx"]][cob["posy"]] = 20
             elif cob["type"] == 2:
                 self.map[cob["posx"]][cob["posy"]] = 10
             elif cob["type"] == 3:

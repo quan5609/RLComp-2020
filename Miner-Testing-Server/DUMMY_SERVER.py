@@ -359,7 +359,7 @@ if __name__ == "__main__":
 
     HOST = "localhost"
     # PORT = int(sys.argv[1])
-    PORT = 49998
+    PORT = 1111
 
     for filename in os.listdir(MAP_DIR):
         if filename == "map" + str(MAP_ID):
