@@ -1,4 +1,5 @@
 import json
+import dbscanner
 
 
 def str_2_json(str):
@@ -14,6 +15,7 @@ class MapInfo:
         self.numberOfPlayers = 0
         self.maxStep = 0
         self.map = None
+        self.clusterList = None
 
     def init_map(self, gameInfo):
         self.max_x = gameInfo["width"] - 1
@@ -23,17 +25,17 @@ class MapInfo:
         self.maxStep = gameInfo["steps"]
         self.numberOfPlayers = gameInfo["numberOfPlayers"]
         # print(gameInfo["width"], gameInfo["height"])
-        self.map = [[1]*gameInfo["height"] for i in range(gameInfo["width"])]
+        self.map = [[1]*gameInfo["width"] for i in range(gameInfo["height"])]
         for ob in self.obstacles:
             # for RLCOMP
             if ob["type"] == 0:
-                self.map[ob["posx"]][ob["posy"]] = 1
+                self.map[ob["posy"]][ob["posx"]] = 1
             elif ob["type"] == 1:
-                self.map[ob["posx"]][ob["posy"]] = 20
+                self.map[ob["posy"]][ob["posx"]] = 20
             elif ob["type"] == 2:
-                self.map[ob["posx"]][ob["posy"]] = 10
+                self.map[ob["posy"]][ob["posx"]] = 10
             elif ob["type"] == 3:
-                self.map[ob["posx"]][ob["posy"]] = -ob["value"]
+                self.map[ob["posy"]][ob["posx"]] = -ob["value"]
 
             # for TEST
             # if ob["type"] == 0:
@@ -45,20 +47,37 @@ class MapInfo:
             # elif ob["type"] == 3:
             #     self.map[ob["posx"]][ob["posy"]] = 3
         for gold in self.golds:
-            self.map[gold["posx"]][gold["posy"]] = 4
+            self.map[gold["posy"]][gold["posx"]] = 4
+
+        self.clusterList = dbscanner.gold_dbscan(self.golds)
+
+    def update_clusterList(self, golds):
+        for cluster in self.clusterList:
+            for gold in cluster.goldArray:
+                exist = False
+                for newGold in golds:
+                    if newGold["posx"] == gold["posx"] and newGold["posy"] == gold["posy"]:
+                        gold["amount"] = newGold["amount"]
+                        exist = True
+                        break
+                if not exist:
+                    cluster.goldArray.remove(gold)
+            cluster.update()
+
 
     def update(self, golds, changedObstacles):
         self.golds = golds
+        self.update_clusterList(golds)
         for cob in changedObstacles:
             # for RLCOMP
             if cob["type"] == 0:
-                self.map[cob["posx"]][cob["posy"]] = 1
+                self.map[cob["posy"]][cob["posx"]] = 1
             elif cob["type"] == 1:
-                self.map[cob["posx"]][cob["posy"]] = 20
+                self.map[cob["posy"]][cob["posx"]] = 20
             elif cob["type"] == 2:
-                self.map[cob["posx"]][cob["posy"]] = 10
+                self.map[cob["posy"]][cob["posx"]] = 10
             elif cob["type"] == 3:
-                self.map[cob["posx"]][cob["posy"]] = -cob["value"]
+                self.map[cob["posy"]][cob["posx"]] = -cob["value"]
 
             # for TEST
             # if ob["type"] == 0:
@@ -110,7 +129,7 @@ class MapInfo:
     def get_cell_cost(self, x, y):
         if x < 0 or x > self.max_x or y < 0 or y > self.max_y:
             return -1
-        return self.map[x][y]
+        return self.map[y][x]
 
     def get_obstacle(self, x, y):  # Getting the kind of the obstacle at cell(x,y)
         for cell in self.obstacles:

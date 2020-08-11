@@ -4,15 +4,20 @@
 from GAME_SOCKET import GameSocket
 from MINER_STATE import State
 import numpy as np
+import enum
 import sys
+import dbscanner
 from warnings import simplefilter
 simplefilter(action='ignore', category=FutureWarning)
 
+class AgentState(enum.Enum):
+    MINING          = 0
+    GOCLUSTER       = 1
+    INCLUSTER       = 2
 
 TreeID = 1
 TrapID = 2
 SwampID = 3
-
 
 class MinerEnv:
     def __init__(self, host, port):
@@ -22,9 +27,11 @@ class MinerEnv:
         self.swampCount = -1
         self.sleepCount = -1
         self.sleepBonus = [12, 16, 25]
-        self.swampPen = [-5, -20, -40, -100]
+
+        self.agentState = AgentState.GOCLUSTER
         # Storing the last score for designing the reward function
         self.score_pre = self.state.score
+        self.currentCluster = None
 
     def start(self):  # connect to server
         self.socket.connect()
@@ -55,137 +62,163 @@ class MinerEnv:
             traceback.print_exc()
 
     def mahattan(self, x1, y1, x2, y2):
-            return abs(x1-x2) + abs(y1 - y2)
+        return abs(x1-x2) + abs(y1 - y2)
 
     def legalAction(self):
         action = [0, 1, 2, 3]
-        if self.state.x == self.state.mapInfo.max_x:
+        x, y = self.state.x, self.state.y
+        if self.state.x == self.state.mapInfo.max_x or self.state.mapInfo.get_cell_cost(x + 1, y) >= 100:
             action.remove(1)
-        if self.state.x == 0:
+        if self.state.x == 0 or self.state.mapInfo.get_cell_cost(x - 1, y) >= 100:
             action.remove(0)
-        if self.state.y == self.state.mapInfo.max_y:
+        if self.state.y == self.state.mapInfo.max_y or self.state.mapInfo.get_cell_cost(x, y + 1) >= 100:
             action.remove(3)
-        if self.state.y == 0:
+        if self.state.y == 0  or self.state.mapInfo.get_cell_cost(x, y - 1) >= 100:
             action.remove(2)
-        for act in action:
-            if act == 0:
-                newX, newY =  self.state.x - 1, self.state.y
-            elif act == 1:
-                newX, newY =  self.state.x + 1, self.state.y
-            elif act == 2:
-                newX, newY =  self.state.x, self.state.y - 1
-            elif act == 3:
-                newX, newY =  self.state.x, self.state.y + 1
-            if self.state.mapInfo.get_cell_cost(newX, newY) >= 100:
-                action.remove(act)
         return action
 
-    def get_successor(self, action, params):
+    def get_successor(self, action):
         newX, newY, newEnergy = self.state.x, self.state.y, self.state.energy
-        # if action == 4:
-        #     self.sleepCount += 1
-        #     newEnergy += self.sleepBonus[self.sleepCount]
-        #     newEnergy = min(50, newEnergy)
-        # else:
-        #     self.sleepCount = -1
         if action == 0:
             newX -= 1
-            newParams, deltaE = self.estimateChange(newX, newY, params)
-            newEnergy -= deltaE
         elif action == 1:
             newX += 1
-            newParams, deltaE = self.estimateChange(newX, newY, params)
-            newEnergy -= deltaE
         elif action == 2:
             newY -= 1
-            newParams, deltaE = self.estimateChange(newX, newY, params)
-            newEnergy -= deltaE
         elif action == 3:
             newY += 1
-            newParams, deltaE = self.estimateChange(newX, newY, params)
-            newEnergy -= deltaE
-        return newX, newY, newEnergy, newParams
+        deltaE = self.state.mapInfo.get_cell_cost(newX, newY)
+        newEnergy -= deltaE
+        return newX, newY, newEnergy
 
-    def estimateChange(self, i, j, params):
-
-        cost = self.state.mapInfo.get_cell_cost(i, j)
-        return params, cost
-        # if self.state.mapInfo.gold_amount(i, j) > 0:
-        #     return params, -4
-        # typeOb, penaltyOb = self.state.mapInfo.get_obstacle_and_penalty(i, j)
-
-        # # for RLCOMP
-        # # if typeOb == TreeID:
-        # #     return params, -20
-
-        # # for Test:
-        # # if typeOb == TreeID:
-        # #     return params, -3
-        # # if typeOb == TrapID:
-        # #     return params, -2
-        # # if typeOb == SwampID:
-        # #     return params, -3
-        # # return params, penaltyOb
-
-        # if self.state.mapInfo.get_obstacle(i, j) == TreeID:  # Tree
-        #     return params, -20
-        # if self.state.mapInfo.get_obstacle(i, j) == TrapID:  # Trap
-        #     return params, -10
-        # if self.state.mapInfo.get_obstacle(i, j) == SwampID:
-        #     if self.swampCount < 3:
-        #         self.swampCount += 1  # Swamp
-        #     return params, self.swampPen[self.swampCount]
-        # if self.state.mapInfo.gold_amount(i, j) > 0:
-        #     return params, -4
-        # return params, -1
+    # def estimateChange(self, i, j):
+    #     cost = self.state.mapInfo.get_cell_cost(i, j)
+    #     return cost
 
     def estimateReceivedGold(self, x, y):
-        # print("Gold Array:", self.state.mapInfo.golds)
-        # print("pos:", x, y)
         initGold = self.state.mapInfo.gold_amount(x, y)
         # print("Init gold:", initGold)
         if initGold <= 0:
             return 0
         countPlayer = 0
         for player in self.state.players:
-            if player["playerId"] != self.state.id:
-                if player["posx"] == x and player["posy"] == y and player["energy"] > 5:
-                    countPlayer += 1
+            if player["playerId"] != self.state.id and player["posx"] == x and player["posy"] == y and player["energy"] > 5:
+                countPlayer += 1
 
         if countPlayer == 0:
             return initGold
-        if initGold >= countPlayer * 50:
+        if initGold >= (countPlayer + 1) * 50:
             return initGold
-        return initGold // countPlayer
+        return initGold // (countPlayer + 1)
+
+    def findBestCluster(self):
+        bestCluster = None
+        globalClusterScore = -1
+        bestDestinationx, bestDestinationy = 0, 0
+        for cluster in self.state.mapInfo.clusterList:
+            if cluster.total_gold > 0:
+                estimatePathToCluster, destinationx, destinationy = cluster.distanceToCluster(self.state.x, self.state.y)
+                estimateGoldInCluster = cluster.total_gold - 50 *cluster.checkEnermyInCluster(self.state.players)*(estimatePathToCluster)
+                clusterScore = estimateGoldInCluster - 24 * estimatePathToCluster
+                clusterScore = max(0, clusterScore)
+                if globalClusterScore < clusterScore:
+                    globalClusterScore = clusterScore
+                    bestDestinationx, bestDestinationy = destinationx, destinationy
+                    bestCluster = cluster
+        return bestDestinationx, bestDestinationy, bestCluster
+
+    def findBestGoldMine(self):
+        pass
 
     def get_action(self):
-        actions = self.legalAction()
-        params = {"swampCount": self.swampCount}
+        
         bestValue = -10000
         bestAction = None
         energyOfBest = self.state.energy
         goldPos = None
 
-        ''' check gold to dig '''
-        if self.estimateReceivedGold(self.state.x, self.state.y) >= 50:
-            bestAction = 5
-            energyOfBest = self.state.energy - 5
-            goldPos = {"posx": self.state.x, "posy": self.state.y, "amount": self.estimateReceivedGold(self.state.x, self.state.y)}
-        else:
+        actions = self.legalAction()
+        goldAmountAtCurrentPosition = self.estimateReceivedGold(self.state.x, self.state.y)
+
+        ''' CHANGE STATE '''
+        if self.agentState == AgentState.GOCLUSTER:
+            desx, desy, bestCluster = self.findBestCluster()
+            if desx == self.state.x and desy == self.state.y:
+                self.agentState = AgentState.INCLUSTER
+                self.currentCluster = bestCluster
+            if goldAmountAtCurrentPosition >= 50:
+                self.agentState = AgentState.MINING
+                
+        elif self.agentState == AgentState.INCLUSTER:
+            if goldAmountAtCurrentPosition >= 50:
+                self.agentState = AgentState.MINING
+            else:
+                print("bug1: ", self.currentCluster.total_gold)
+                if self.currentCluster.total_gold <= 0:
+                    print("bug2")
+                    self.agentState = AgentState.GOCLUSTER
+                    self.currentCluster = None
+        elif self.agentState == AgentState.MINING:
+            if goldAmountAtCurrentPosition < 50:
+                if self.currentCluster is not None and self.currentCluster.total_gold > 0:
+                    self.agentState = AgentState.INCLUSTER
+                else:
+                    self.agentState = AgentState.GOCLUSTER
+
+        print("Current state:", self.agentState)
+        if(self.currentCluster != None):
+            print("Total cluster gold: ", self.currentCluster.total_gold)
+
+        ''' DO ACTION '''
+        if self.agentState == AgentState.GOCLUSTER:
+            desx, desy, bestCluster = self.findBestCluster()
+            bestValue = 10000
             for action in actions:
-                print("try action: ", action)
-                posx, posy, energy, params = self.get_successor(action, params)
+                print("\tTry action: ", action)
+                posx, posy, energy = self.get_successor(action)
+                pathCost = self.estimatePathCost(posx, posy, desx, desy)
+                if pathCost < bestValue:
+                    bestValue = pathCost
+                    bestAction = action
+                    energyOfBest = energy
+                    goldPos = {"posx": desx, "posy": desy, "amount": 0}
+
+        elif self.agentState == AgentState.INCLUSTER:
+            bestValue = -1
+            for action in actions:
+                print("\tTry action: ", action)
+                posx, posy, energy = self.get_successor(action)
                 value, gold = self.new_evaluationFunc(posx, posy)
-                # value = self.evaluationFunc(
-                #     posX, posY, energy, self.state.mapInfo.golds, self.state.mapInfo.obstacles, params)
                 if value > bestValue:
                     bestValue = value
                     bestAction = action
                     energyOfBest = energy
                     goldPos = gold
 
-                # print("-------------------------")
-        print("Best action:", bestAction, energyOfBest)
+        elif self.agentState == AgentState.MINING:
+            bestAction = 5
+            energyOfBest = self.state.energy - 5
+            goldPos = {"posx": self.state.x, "posy": self.state.y, "amount": self.estimateReceivedGold(self.state.x, self.state.y)}
+
+
+        # ''' check gold to dig '''
+        # if self.estimateReceivedGold(self.state.x, self.state.y) >= 50:
+        #     bestAction = 5
+        #     energyOfBest = self.state.energy - 5
+        #     goldPos = {"posx": self.state.x, "posy": self.state.y, "amount": self.estimateReceivedGold(self.state.x, self.state.y)}
+        # else:
+        #     for action in actions:
+        #         print("\tTry action: ", action)
+        #         posx, posy, energy = self.get_successor(action)
+        #         value, gold = self.new_evaluationFunc(posx, posy)
+        #         if value > bestValue:
+        #             bestValue = value
+        #             bestAction = action
+        #             energyOfBest = energy
+        #             goldPos = gold
+
+        #         # print("-------------------------")
+        # print("Best action:", bestAction, energyOfBest)
 
         # print("Best action:", bestAction)
         # need_energy = self.
@@ -201,8 +234,26 @@ class MinerEnv:
 
         return bestAction, goldPos
 
+    # def new_estimatePathCost(self, startx, starty, endx, endy):
+    #     hstep = 1 if endx > startx else -1
+    #     vstep = 1 if endy > starty else -1
+    #     j = endy
+
+    #     costMatrix = self.state.mapInfo.map[min(starty, endy): max(starty, endy)][min(startx, endx): max(startx, endx)]
+    #     dpCost = [[0]*abs(startx - endx) for i in range(abs(starty - endy))]
+
+    #     i = endx - hstep
+    #     while (i != startx) {
+
+    #     }
+    #     while(j != starty) {
+    #         i = endx
+    #         while(i != startx) {
+
+    #         }
+    #     }
+
     def estimatePathCost(self, startx, starty, endx, endy):
-        # print(self.state.mapInfo.map)
         hstep = 1 if endx > startx else -1
         vstep = 1 if endy > starty else -1
         i, j = startx, starty
@@ -249,7 +300,6 @@ class MinerEnv:
                     break
                 i += hstep
             totalCostLH = hcost + vcost
-
         return min(totalCostHL, totalCostLH)
 
     def estimateBotPosition(self, goldX, goldY):
@@ -262,18 +312,15 @@ class MinerEnv:
         return countBot
 
     def new_evaluationFunc(self, posx, posy):
-        def mahattan(x1, y1, x2, y2):
-            return abs(x1-x2) + abs(y1 - y2)
-
         # if self.state.mapInfo.get_cell_cost(posx, posy) >= 40:
         #     return 50, 
 
         maxGoldScore = 0
         goldPos = None
         ''' estimate gold '''
-        for gold in self.state.mapInfo.golds:
-            distance = mahattan(posx, posy, gold["posx"], gold["posy"])
-            distance = 10 if distance > 10 else distance
+        for gold in self.currentCluster.goldArray:
+            distance = self.mahattan(posx, posy, gold["posx"], gold["posy"])
+            distance = min(10, distance)
             if distance < 3:
                 goldScore = (10 - distance) * 150 + gold["amount"]
             else:

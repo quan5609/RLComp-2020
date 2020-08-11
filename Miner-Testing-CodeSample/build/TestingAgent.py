@@ -33,6 +33,8 @@ try:
     minerEnv = MinerEnv(HOST, PORT)
     minerEnv.start()  # Connect to the game
     minerEnv.reset()
+    print(minerEnv.state.mapInfo.golds)
+
     # s = minerEnv.get_state()  # Getting an initial state
     while not minerEnv.check_terminate():
         try:
