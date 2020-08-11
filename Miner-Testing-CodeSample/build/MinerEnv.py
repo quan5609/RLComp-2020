@@ -184,7 +184,7 @@ class MinerEnv:
                     goldPos = {"posx": desx, "posy": desy, "amount": 0}
 
         elif self.agentState == AgentState.INCLUSTER:
-            bestValue = -1
+            bestValue = -10000
             for action in actions:
                 print("\tTry action: ", action)
                 posx, posy, energy = self.get_successor(action)
@@ -226,10 +226,12 @@ class MinerEnv:
             self.isSleeping = True
             return 4, goldPos
         elif self.isSleeping:
-            if bestAction != 5 and self.state.energy < 32:
+            if self.state.energy < 32:
                 return 4, goldPos
-            elif bestAction == 5 and self.state.energy < 28:
-                return 4, goldPos
+            # if bestAction != 5 and self.state.energy < 32:
+            #     return 4, goldPos
+            # elif bestAction == 5 and self.state.energy < 32:
+            #     return 4, goldPos
         self.isSleeping = False
 
         return bestAction, goldPos
