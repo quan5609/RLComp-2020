@@ -157,11 +157,13 @@ for episode_i in range(0, N_EPISODE):
             reward += minerEnv.get_reward()  # Getting a reward
             count_step += 1
             # Iteration to save the network architecture and weights
+
         if (np.mod(episode_i + 1, SAVE_NETWORK) == 0 and train == True):
             # Replace the learning weights for target model with soft replacement
             DQNAgent.target_train()
             # Save the DQN model
             now = datetime.datetime.now()  # Get the latest datetime
+            print("BUGGGGGGGGG")
             DQNAgent.save_model("TrainedModels/",
                                 "DQNmodel_" + now.strftime("%Y%m%d-%H%M") + "_ep" + str(episode_i + 1))
 
