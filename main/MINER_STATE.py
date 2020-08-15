@@ -158,7 +158,7 @@ class State:
     def __init__(self):
         self.end = False
         self.score = 0
-        self.lastAction = None
+        self.lastAction = -1
         self.id = 0
         self.x = 0
         self.y = 0
@@ -181,9 +181,9 @@ class State:
         self.stepCount = 0
         self.status = State.STATUS_PLAYING
         # self.players = []
-        self.players = [{"playerId": 2, "posx": self.x, "posy": self.y, "energy": self.energy, "score": 0, "lasAction": None, "status": State.STATUS_PLAYING},
-                        {"playerId": 3, "posx": self.x, "posy": self.y,  "energy": self.energy, "score": 0, "lasAction": None, "status": State.STATUS_PLAYING},
-                        {"playerId": 4, "posx": self.x, "posy": self.y,  "energy": self.energy, "score": 0, "lasAction": None, "status": State.STATUS_PLAYING}]
+        self.players = [{"playerId": 2, "posx": self.x, "posy": self.y, "energy": self.energy, "score": 0, "lastAction": -1, "status": State.STATUS_PLAYING},
+                        {"playerId": 3, "posx": self.x, "posy": self.y,  "energy": self.energy, "score": 0, "lastAction": -1, "status": State.STATUS_PLAYING},
+                        {"playerId": 4, "posx": self.x, "posy": self.y,  "energy": self.energy, "score": 0, "lastAction": -1, "status": State.STATUS_PLAYING}]
 
     def update_state(self, data):
         new_state = str_2_json(data)

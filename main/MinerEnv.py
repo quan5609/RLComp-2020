@@ -158,13 +158,25 @@ class MinerEnv:
 
     def getClusterState(self, cluster):
         if cluster.total_gold <= 0:
-            return [0,0,0,0]
+            return [0,0,0,0,0]
+
+        x, y = cluster.center_x, cluster.center_y
+        terrainCost = 0
+        for i in range(y - 2, y + 3):
+            for j in range(x - 2, x + 3):
+                checkCell = self.state.mapInfo.get_cell_cost(i, j)
+                checkObj = self.state.mapInfo.get_obstacle(i, j)
+                if checkCell != -1 and checkObj != -1:
+                    if checkObj == 1: # tree
+                        terrainCost += 1
+                    elif checkObj == 3: # swarm
+                        terrainCost += 2
         pathCost = self.estimatePathCost(
             self.state.x, self.state.y, cluster.center_x, cluster.center_y)
         # if pathCost + 1 == 0:
         #     print("BUG:", )
         # try:
-        result = [np.log(cluster.total_gold+1), cluster.center_x, cluster.center_y, np.log(pathCost+1)]
+        result = [np.log(cluster.total_gold+1), cluster.center_x, cluster.center_y, np.log(pathCost+1), terrainCost]
         # except:
         # print("Bug log: pathcost", pathCost)
         # print("Bug log: cluster total gold", cluster.total_gold)
@@ -173,14 +185,14 @@ class MinerEnv:
 
     def get_state(self):
         # Player State
-        player_state = [self.state.x, self.state.y]
+        player_state = [self.state.x, self.state.y, self.state.energy, self.state.lastAction]
         # print("BUG", self.state.players)
         for player in self.state.players:
             # print("Debug state bot:", player)
-            player_state += [player['posx'], player['posy']]
+            player_state += [player['posx'], player['posy'], player['energy'], player['lastAction']]
 
-        if len(player_state) < 8:
-            player_state += [0] * (8 - len(player_state))
+        if len(player_state) < 16:
+            player_state += [0] * (16 - len(player_state))
         # Cluster state
         cluster_state = []
         self.sorted_cluster_list = sorted(
@@ -191,15 +203,15 @@ class MinerEnv:
                 cluster_state += self.getClusterState(
                     self.sorted_cluster_list[i])
             else:
-                cluster_state += [0, 0, 0, 0]
+                cluster_state += [0, 0, 0, 0, 0]
 
         if self.targetCluster is None:
-            target_cluster_state = [0, 0, 0, 0]
+            target_cluster_state = [0, 0, 0, 0, 0]
         else:
             target_cluster_state = self.getClusterState(self.targetCluster)
 
         if self.currentCluster is None:
-            current_cluster_state = [0, 0, 0, 0]
+            current_cluster_state = [0, 0, 0, 0, 0]
         else:
             current_cluster_state = self.getClusterState(self.currentCluster)
 
@@ -215,7 +227,9 @@ class MinerEnv:
     def get_reward(self):
         delta = self.state.score - self.score_pre
         self.score_pre = self.state.score
-        return delta
+        if delta == 0:
+            delta -= 5
+        return 5 * delta
 
     def check_mining(self):
         goldAmountAtCurrentPosition = self.estimateReceivedGold(

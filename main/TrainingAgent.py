@@ -35,6 +35,7 @@ prevGoldPos = None
 reward = 0
 current_state = None
 current_cluster = None
+current_cluster_id = None
 
 now = datetime.datetime.now()  # Getting the latest datetime
 header = ["Ep", "Step", "Reward", "Total_reward", "Action", "Epsilon",
@@ -53,7 +54,7 @@ MEMORY_SIZE = 100000  # The size of the batch for storing experiences
 SAVE_NETWORK = 100
 # The number of experiences are stored in the memory batch before starting replaying
 INITIAL_REPLAY_SIZE = 1000
-INPUTNUM = 48  # The number of input values for the DQN model
+INPUTNUM = 66  # The number of input values for the DQN model
 ACTIONNUM = 8  # The number of actions output from the DQN model
 MAP_MAX_X = 21  # Width of the Map
 MAP_MAX_Y = 9  # Height of the Map
@@ -105,8 +106,8 @@ for episode_i in range(0, N_EPISODE):
 
             if current_state is not None:
                 # Add this transition to the memory batch
-                if len(current_state) < 48 or len(s) < 48:
-                    print(s)
+                # if len(current_state) < 48 or len(s) < 48:
+                #     print(s)
                 memory.push(current_state, current_cluster,
                             reward, minerEnv.check_terminate(), s)
                 # Sample batch memory to train network
@@ -136,6 +137,7 @@ for episode_i in range(0, N_EPISODE):
             current_state = s
             # print("State:", s)
             clusterId = DQNAgent.act(s)
+            
             if clusterId >= minerEnv.clusterNum:
                 reward -= 1000
             else:
@@ -144,8 +146,9 @@ for episode_i in range(0, N_EPISODE):
                         reward -= 100
                 if minerEnv.targetCluster is not None:
                     if minerEnv.sorted_cluster_list[clusterId]._id != minerEnv.targetCluster._id:
-                        reward -= 100
+                        reward -= 200
             current_cluster = clusterId
+            
 
             agentState = minerEnv.get_agent_state(clusterId)
             action, goldPos = minerEnv.get_action()
