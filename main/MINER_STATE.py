@@ -63,7 +63,8 @@ class MapInfo:
                 if not exist:
                     cluster.goldArray.remove(gold)
             cluster.update()
-
+            if cluster.total_gold <= 0:
+                self.clusterList.remove(cluster)
 
     def update(self, golds, changedObstacles):
         self.golds = golds
@@ -178,10 +179,10 @@ class State:
         self.mapInfo.init_map(game_info["gameinfo"])
         self.stepCount = 0
         self.status = State.STATUS_PLAYING
-        self.players = []
-        # self.players = [{"playerId": 2, "posx": self.x, "posy": self.y},
-        #                 {"playerId": 3, "posx": self.x, "posy": self.y},
-        #                 {"playerId": 4, "posx": self.x, "posy": self.y}]
+        # self.players = []
+        self.players = [{"playerId": 2, "posx": self.x, "posy": self.y, "energy": self.energy, "score": 0, "lasAction": None, "status": State.STATUS_PLAYING},
+                        {"playerId": 3, "posx": self.x, "posy": self.y,  "energy": self.energy, "score": 0, "lasAction": None, "status": State.STATUS_PLAYING},
+                        {"playerId": 4, "posx": self.x, "posy": self.y,  "energy": self.energy, "score": 0, "lasAction": None, "status": State.STATUS_PLAYING}]
 
     def update_state(self, data):
         new_state = str_2_json(data)
@@ -203,3 +204,4 @@ class State:
         #     self.players.append(
         #         {"playerId": i, "posx": self.x, "posy": self.y})
         self.stepCount = self.stepCount + 1
+

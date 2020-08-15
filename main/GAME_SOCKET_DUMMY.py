@@ -5,6 +5,7 @@ import os
 import math
 from agent_8_8 import Agent_8_8
 from agent_11_8 import Agent_11_8
+from agent_dummy import Agent_Dummy
 from random import randrange
 
 
@@ -118,7 +119,7 @@ class GameSocket:
         self.craftMap = {}  # cells that players craft at current step, key: x_y, value: number of players that craft at (x,y)
 
     def init_bots(self):
-        self.bots = [Agent_8_8(2), Agent_11_8(3)]  # use bot1(id=2), bot2(id=3), bot3(id=4)
+        self.bots = [Agent_8_8(2), Agent_11_8(3), Agent_Dummy(4)]  # use bot1(id=2), bot2(id=3), bot3(id=4)
         for (bot) in self.bots:  # at the beginning, all bots will have same position, energy as player
             bot.info.posx = self.user.posx
             bot.info.posy = self.user.posy
@@ -358,8 +359,10 @@ class GameSocket:
                                 self.stepState.golds.remove(g)
                                 self.add_changed_obstacle(x, y, 0, ObstacleInfo.types[0])
                                 if len(self.stepState.golds) == 0:
+                                    print("##################\nFINAL:")
                                     for player in self.stepState.players:
                                         player.status = PlayerInfo.STATUS_STOP_EMPTY_GOLD
+                                        print("\tPlayer %d, total gold: %d" % (player.playerId, player.score))
                             break;
             self.craftMap = {}
 

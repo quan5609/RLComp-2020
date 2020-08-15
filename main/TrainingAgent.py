@@ -41,7 +41,7 @@ try:
     minerEnv.send_map_info(request)
     minerEnv.reset()
     # print(minerEnv.state.mapInfo.golds)
-
+    print("Initial", len(minerEnv.state.players))
     # s = minerEnv.get_state()  # Getting an initial state
     while not minerEnv.check_terminate():
         try:

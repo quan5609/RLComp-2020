@@ -49,6 +49,7 @@ class MinerEnv:
 
     def reset(self):  # start new game
         try:
+            # self.socket.reset()
             message = self.socket.receive()  # receive game info from server
             # print(message)
             self.state.init_state(message)  # init state
@@ -70,6 +71,7 @@ class MinerEnv:
         return abs(x1-x2) + abs(y1 - y2)
 
     def legalAction(self):
+        print("TESTTTTTTTTTTTTTT", self.state.players[1]["energy"])
         action = [0, 1, 2, 3]
         x, y = self.state.x, self.state.y
         if self.state.x == self.state.mapInfo.max_x or self.state.mapInfo.get_cell_cost(x + 1, y) >= 100:
@@ -172,7 +174,7 @@ class MinerEnv:
                     self.agentState = AgentState.GOCLUSTER
                     self.currentCluster = None
         elif self.agentState == AgentState.MINING:
-            if goldAmountAtCurrentPosition < 50:
+            if goldAmountAtCurrentPosition < 25:
                 # if self.currentCluster is not None and self.currentCluster.total_gold > 0:
                 #     self.agentState = AgentState.INCLUSTER
                 # else:
