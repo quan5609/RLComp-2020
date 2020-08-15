@@ -152,8 +152,9 @@ class GameSocket:
         self.init_bots()
         self.stepCount = 0
 
-    def reset_map(self, id):  # load map info
-        self.mapId = id
+    def reset_map(self, _id):  # load map info
+        self.mapId = _id
+        # print("BUg json:", self.mapId)
         self.map = json.loads(self.maps[self.mapId])
         self.userMatch = self.map_info(self.map)
         self.stepState.golds = self.userMatch.gameinfo.golds
