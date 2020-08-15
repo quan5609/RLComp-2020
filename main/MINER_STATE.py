@@ -129,6 +129,7 @@ class MapInfo:
 
     def get_cell_cost(self, x, y):
         if x < 0 or x > self.max_x or y < 0 or y > self.max_y:
+            # print("Invalid position", x, y)
             return -1
         return self.map[y][x]
 
@@ -198,6 +199,8 @@ class State:
             elif player["status"] == 0:  # still playing
                 self.players.append(player)
 
+        # if len(self.players) != 3:
+        #     print("Debug message:", new_state["players"])
         self.mapInfo.update(new_state["golds"], new_state["changedObstacles"])
         # self.players = new_state["players"]
         # for i in range(len(self.players), 4, 1):

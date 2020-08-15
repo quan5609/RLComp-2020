@@ -7,14 +7,17 @@ import dbscanner
 from warnings import simplefilter
 simplefilter(action='ignore', category=FutureWarning)
 
+
 class AgentState(enum.Enum):
-    MINING          = 0
-    GOCLUSTER       = 1
-    INCLUSTER       = 2
+    MINING = 0
+    GOCLUSTER = 1
+    INCLUSTER = 2
+
 
 TreeID = 1
 TrapID = 2
 SwampID = 3
+
 
 class PlayerInfo:
     def __init__(self, id):
@@ -26,6 +29,7 @@ class PlayerInfo:
         self.lastAction = -1
         self.status = 0
         self.freeCount = 0
+
 
 class Agent_11_8:
     def __init__(self, agentId):
@@ -45,7 +49,7 @@ class Agent_11_8:
     def reset(self, message):  # start new game
         self.state.init_state(message)  # init state
         self.state.id = self.agent_id
-    
+
     def update(self, message):
         self.state.update_state(message)
 
@@ -65,7 +69,7 @@ class Agent_11_8:
             action.remove(0)
         if self.state.y == self.state.mapInfo.max_y or self.state.mapInfo.get_cell_cost(x, y + 1) >= 100:
             action.remove(3)
-        if self.state.y == 0  or self.state.mapInfo.get_cell_cost(x, y - 1) >= 100:
+        if self.state.y == 0 or self.state.mapInfo.get_cell_cost(x, y - 1) >= 100:
             action.remove(2)
         return action
 
@@ -90,7 +94,8 @@ class Agent_11_8:
             return 0
         countPlayer = 0
         for player in self.state.players:
-            if player["playerId"] != self.state.id and player["posx"] == x and player["posy"] == y and player["energy"] > 5:
+            if player["playerId"] != self.state.id and player["posx"] == x and player["posy"] == y:
+                # if player["playerId"] != self.state.id and player["posx"] == x and player["posy"] == y and player["energy"] > 5:
                 countPlayer += 1
 
         if countPlayer == 0:
@@ -105,8 +110,11 @@ class Agent_11_8:
         bestDestinationx, bestDestinationy = 0, 0
         for cluster in self.state.mapInfo.clusterList:
             if cluster.total_gold > 0:
-                estimatePathToCluster, destinationx, destinationy = cluster.distanceToCluster(self.state.x, self.state.y)
-                estimateGoldInCluster = cluster.total_gold - 50 *cluster.checkEnermyInCluster(self.state.players)*(estimatePathToCluster)
+                estimatePathToCluster, destinationx, destinationy = cluster.distanceToCluster(
+                    self.state.x, self.state.y)
+                estimateGoldInCluster = cluster.total_gold - 50 * \
+                    cluster.checkEnermyInCluster(
+                        self.state.players)*(estimatePathToCluster)
                 clusterScore = estimateGoldInCluster - 24 * estimatePathToCluster
                 clusterScore = max(0, clusterScore)
                 if globalClusterScore < clusterScore:
@@ -119,15 +127,15 @@ class Agent_11_8:
         pass
 
     def get_action(self):
-        
+
         bestValue = -10000
         bestAction = None
         energyOfBest = self.state.energy
         goldPos = None
 
         actions = self.legalAction()
-        goldAmountAtCurrentPosition = self.estimateReceivedGold(self.state.x, self.state.y)
-
+        goldAmountAtCurrentPosition = self.estimateReceivedGold(
+            self.state.x, self.state.y)
 
 
         ''' CHANGE STATE '''
@@ -138,7 +146,7 @@ class Agent_11_8:
                 self.currentCluster = bestCluster
             if goldAmountAtCurrentPosition >= 50:
                 self.agentState = AgentState.MINING
-                
+
         elif self.agentState == AgentState.INCLUSTER:
             if goldAmountAtCurrentPosition >= 50:
                 self.agentState = AgentState.MINING
@@ -188,7 +196,8 @@ class Agent_11_8:
         elif self.agentState == AgentState.MINING:
             bestAction = 5
             energyOfBest = self.state.energy - 5
-            goldPos = {"posx": self.state.x, "posy": self.state.y, "amount": self.estimateReceivedGold(self.state.x, self.state.y)}
+            goldPos = {"posx": self.state.x, "posy": self.state.y,
+                       "amount": self.estimateReceivedGold(self.state.x, self.state.y)}
 
         if not self.isSleeping and energyOfBest <= 0:
             self.isSleeping = True
@@ -255,14 +264,15 @@ class Agent_11_8:
         countBot = []
         for player in self.state.players:
             if player["playerId"] != self.state.id:
-                distanceToGold = self.mahattan(goldX, goldY, player["posx"], player["posy"])
+                distanceToGold = self.mahattan(
+                    goldX, goldY, player["posx"], player["posy"])
                 if distanceToGold <= 3:
                     countBot.append(distanceToGold)
         return countBot
 
     def new_evaluationFunc(self, posx, posy):
         # if self.state.mapInfo.get_cell_cost(posx, posy) >= 40:
-        #     return 50, 
+        #     return 50,
 
         maxGoldScore = 0
         goldPos = None
@@ -274,7 +284,9 @@ class Agent_11_8:
                 goldScore = (10 - distance) * 150 + gold["amount"]
             else:
                 countBot = self.estimateBotPosition(gold["posx"], gold["posy"])
-                goldScore = (10 - distance) * 150 + gold["amount"] - 50*(len(countBot) * distance - sum(countBot))
+                goldScore = (10 - distance) * 150 + \
+                    gold["amount"] - 50 * \
+                    (len(countBot) * distance - sum(countBot))
                 goldScore = max(1, goldScore)
             if maxGoldScore < goldScore:
                 goldPos = gold
