@@ -13,7 +13,7 @@ class MapInfo:
         self.golds = []
         self.obstacles = []
         self.numberOfPlayers = 0
-        self.maxStep = 0
+        self.maxStep = 100
         self.map = None
         self.clusterList = None
 
@@ -63,7 +63,6 @@ class MapInfo:
                 if not exist:
                     cluster.goldArray.remove(gold)
             cluster.update()
-
 
     def update(self, golds, changedObstacles):
         self.golds = golds
