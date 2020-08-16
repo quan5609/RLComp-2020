@@ -265,6 +265,7 @@ class GameSocket:
             user.energy -= 10
             if user.energy <= 0:
                 user.status = PlayerInfo.STATUS_ELIMINATED_OUT_OF_ENERGY
+                print("Bug energy craft not at miner: ", user.playerId, user.energy)
                 user.lastAction = 6 #eliminated
         else:
             user.energy -= 5
@@ -278,6 +279,7 @@ class GameSocket:
                     self.craftMap[key] = 1
             else:
                 user.status = PlayerInfo.STATUS_ELIMINATED_OUT_OF_ENERGY
+                print("Bug energy craft ngu: ", user.playerId, user.energy)
                 user.lastAction = 6 #eliminated
 
     def action_0_left(self, user):  # user go left
@@ -387,6 +389,7 @@ class GameSocket:
             user.energy -= 4
         if user.energy <= 0:
             user.status = PlayerInfo.STATUS_ELIMINATED_OUT_OF_ENERGY
+            print("Bug energy: ", user.playerId, user.energy)
             user.lastAction = 6 #eliminated
 
     def add_changed_obstacle(self, x, y, t, v):

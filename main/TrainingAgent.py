@@ -29,7 +29,6 @@ status_map = {0: "STATUS_PLAYING", 1: "STATUS_ELIMINATED_WENT_OUT_MAP", 2: "STAT
 action_map = {0: "GO LEFT", 1: "GO RIGHT",
               2: "GO UP", 3: "GO DOWN", 4: "SLEEP", 5: "DIG GOLD"}
 
-
 prevAction = - 1
 prevGoldPos = None
 reward = 0
@@ -71,7 +70,7 @@ for episode_i in range(0, N_EPISODE):
         minerEnv.start()  # Connect to the game
         # mapID = 5
         # Choosing a map ID from 5 maps in Maps folder randomly
-        mapID = np.random.randint(1, 6)
+        mapID = np.random.randint(1, 8)
         # Choosing a initial position of the DQN agent on X-axes randomly
         posID_x = np.random.randint(MAP_MAX_X)
         # Choosing a initial position of the DQN agent on Y-axes randomly
@@ -152,8 +151,6 @@ for episode_i in range(0, N_EPISODE):
 
             agentState = minerEnv.get_agent_state(clusterId)
             action, goldPos = minerEnv.get_action()
-            # print("At step %d:\n\tCurrent gold: %d\n\tCurrent energy: %d\n\tAction: %s" % (
-            #     count_step, minerEnv.state.score, minerEnv.state.energy, action_map[action]))
             # print("Debug action", action)
             minerEnv.step(str(action))
             prevAction = action
