@@ -129,7 +129,7 @@ class GameSocket:
             bot.info.score = 0
             self.stepState.players.append(bot.info)
         self.userMatch.gameinfo.numberOfPlayers = len(self.stepState.players)
-        print("numberOfPlayers: ", self.userMatch.gameinfo.numberOfPlayers)
+        # print("numberOfPlayers: ", self.userMatch.gameinfo.numberOfPlayers)
 
     def reset(self, requests):  # load new game by given request: [map id (filename), posx, posy, initial energy]
         # load new map
@@ -171,7 +171,7 @@ class GameSocket:
         print("Connected to server.")
         # load all pre-defined maps from mapDir
         for filename in os.listdir(self.mapdir):
-            print("Found: " + filename)
+            # print("Found: " + filename)
             with open(os.path.join(self.mapdir, filename), 'r') as f:
                 self.maps[filename] = f.read()
 

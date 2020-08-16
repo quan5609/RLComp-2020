@@ -120,7 +120,7 @@ class MinerEnv:
         return initGold // (countPlayer + 1)
 
     def distanceToCluster(self, cluster, posx, posy):
-        distanceArray = list(map(lambda x: self.estimatePathCost(
+        distanceArray = list(map(lambda x: self.new_estimatePathCost(
             x['posx'], x['posy'], posx, posy), cluster.goldArray))
         minDistance = min(distanceArray)
 
@@ -171,7 +171,7 @@ class MinerEnv:
                         terrainCost += 1
                     elif checkObj == 3: # swarm
                         terrainCost += 2
-        pathCost = self.estimatePathCost(
+        pathCost = self.new_estimatePathCost(
             self.state.x, self.state.y, cluster.center_x, cluster.center_y)
         # if pathCost + 1 == 0:
         #     print("BUG:", )
@@ -319,7 +319,7 @@ class MinerEnv:
             for action in actions:
                 # print("\tTry action: ", action)
                 posx, posy, energy = self.get_successor(action)
-                pathCost = self.estimatePathCost(
+                pathCost = self.new_estimatePathCost(
                     posx, posy, self.targetDesx, self.targetDesy)
                 if pathCost < bestValue:
                     bestValue = pathCost
@@ -357,24 +357,53 @@ class MinerEnv:
         #     print("debug state", self.agentState)
         return bestAction, goldPos
 
-    # def new_estimatePathCost(self, startx, starty, endx, endy):
-    #     hstep = 1 if endx > startx else -1
-    #     vstep = 1 if endy > starty else -1
-    #     j = endy
+    def new_estimatePathCost(self, startx, starty, endx, endy):
+        hstep = 1 if endx > startx else -1
+        vstep = 1 if endy > starty else -1
 
-    #     costMatrix = self.state.mapInfo.map[min(starty, endy): max(starty, endy)][min(startx, endx): max(startx, endx)]
-    #     dpCost = [[0]*abs(startx - endx) for i in range(abs(starty - endy))]
+        if startx == endx and starty == endy:
+            return 0
 
-    #     i = endx - hstep
-    #     while (i != startx) {
+        if startx == endx:
+            cost = 0
+            idx = endy
+            while(idx != starty):
+                cost += self.state.mapInfo.map[idx][startx]
+                idx = idx - vstep
+            return cost
 
-    #     }
-    #     while(j != starty) {
-    #         i = endx
-    #         while(i != startx) {
+        if starty == endy:
+            cost = 0
+            idx = endx
+            while(idx != startx):
+                cost += self.state.mapInfo.map[starty][idx]
+                idx = idx - hstep
+            return cost
 
-    #         }
-    #     }
+        # costMatrix = self.state.mapInfo.map[min(starty, endy): max(starty, endy)][min(startx, endx): max(startx, endx)]
+        # dpCost = [[0]*abs(startx - endx) for i in range(abs(starty - endy))]
+        costMatrix = self.state.mapInfo.map
+        dpCost = [[0]*(self.state.mapInfo.max_x+1) for i in range(self.state.mapInfo.max_y+1)]
+
+        i = endx - hstep
+        j = endy
+        while ((startx < endx and i >= startx) or (startx >= endx and i <= startx)):
+            dpCost[j][i] = dpCost[j][i+hstep] + costMatrix[j][i+hstep]
+            i = i - hstep
+        i = endx
+        j = endy - vstep
+        while ((starty < endy and j >= starty) or (starty >= endy and j <= starty)):
+            dpCost[j][i] = dpCost[j+vstep][i] + costMatrix[j+vstep][i]
+            j = j - vstep
+        
+        j = endy - vstep
+        while ((starty < endy and j >= starty) or (starty >= endy and j <= starty)):
+            i = endx - hstep
+            while ((startx < endx and i >= startx) or (startx >= endx and i <= startx)):
+                dpCost[j][i] = min(dpCost[j][i+hstep] + costMatrix[j][i+hstep], dpCost[j+vstep][i] + costMatrix[j+vstep][i])
+                i = i - hstep
+            j = j - vstep
+        return dpCost[starty][startx]
 
     def estimatePathCost(self, startx, starty, endx, endy):
         hstep = 1 if endx > startx else -1
@@ -444,7 +473,7 @@ class MinerEnv:
         ''' estimate gold '''
         for gold in self.currentCluster.goldArray:
             distance = self.mahattan(posx, posy, gold["posx"], gold["posy"])
-            pathScoreToGold = self.estimatePathCost(
+            pathScoreToGold = self.new_estimatePathCost(
                 posx, posy, gold["posx"], gold["posy"])
             distance = min(10, distance)
             if distance < 3:

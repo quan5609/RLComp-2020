@@ -24,7 +24,6 @@ class MapInfo:
         self.obstacles = gameInfo["obstacles"]
         self.maxStep = gameInfo["steps"]
         self.numberOfPlayers = gameInfo["numberOfPlayers"]
-        # print(gameInfo["width"], gameInfo["height"])
         self.map = [[1]*gameInfo["width"] for i in range(gameInfo["height"])]
         for ob in self.obstacles:
             # for RLCOMP
@@ -36,16 +35,6 @@ class MapInfo:
                 self.map[ob["posy"]][ob["posx"]] = 10
             elif ob["type"] == 3:
                 self.map[ob["posy"]][ob["posx"]] = -ob["value"]
-
-            # for TEST
-            # if ob["type"] == 0:
-            #     self.map[ob["posx"]][ob["posy"]] = 1
-            # elif ob["type"] == 1:
-            #     self.map[ob["posx"]][ob["posy"]] = 3
-            # elif ob["type"] == 2:
-            #     self.map[ob["posx"]][ob["posy"]] = 2
-            # elif ob["type"] == 3:
-            #     self.map[ob["posx"]][ob["posy"]] = 3
         for gold in self.golds:
             self.map[gold["posy"]][gold["posx"]] = 4
 
@@ -80,15 +69,6 @@ class MapInfo:
             elif cob["type"] == 3:
                 self.map[cob["posy"]][cob["posx"]] = -cob["value"]
 
-            # for TEST
-            # if ob["type"] == 0:
-            #     self.map[ob["posx"]][ob["posy"]] = 1
-            # elif ob["type"] == 1:
-            #     self.map[ob["posx"]][ob["posy"]] = 3
-            # elif ob["type"] == 2:
-            #     self.map[ob["posx"]][ob["posy"]] = 2
-            # elif ob["type"] == 3:
-            #     self.map[ob["posx"]][ob["posy"]] = 3
             newOb = True
             for ob in self.obstacles:
                 if cob["posx"] == ob["posx"] and cob["posy"] == ob["posy"]:
