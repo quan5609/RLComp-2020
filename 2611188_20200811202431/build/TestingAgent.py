@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-from keras.models import model_from_json
 import numpy as np
 from MinerEnv import MinerEnv
 import sys
@@ -7,13 +6,6 @@ from warnings import simplefilter
 simplefilter(action='ignore', category=FutureWarning)
 
 
-# load json and create model
-json_file = open('DQNmodel_latest.json', 'r')
-loaded_model_json = json_file.read()
-json_file.close()
-DQNAgent = model_from_json(loaded_model_json)
-# load weights into new model
-DQNAgent.load_weights("DQNmodel_latest.h5")
 
 
 ACTION_GO_LEFT = 0
@@ -22,10 +14,6 @@ ACTION_GO_UP = 2
 ACTION_GO_DOWN = 3
 ACTION_FREE = 4
 ACTION_CRAFT = 5
-
-HOST = "localhost"
-# PORT = int(sys.argv[1])
-PORT = 1111
 
 if len(sys.argv) == 3:
     HOST = str(sys.argv[1])
@@ -47,33 +35,25 @@ try:
     minerEnv.reset()
     print(minerEnv.state.mapInfo.golds)
 
-    s = minerEnv.get_state()  # Getting an initial state
+    # s = minerEnv.get_state()  # Getting an initial state
     while not minerEnv.check_terminate():
         try:
-            if minerEnv.check_mining():
-                action, goldPos = minerEnv.get_action()
-                # print("Debug action", action)
-                minerEnv.step(str(action))
-                # prevAction = action
-                # prevGoldPos = goldPos
-                # reward += minerEnv.get_reward()
-                s = minerEnv.get_state()
-                # count_step += 1
-                continue
-
-            # current_state = s
-            # print("State:", s)
-            clusterId = np.argmax(DQNAgent.predict(s.reshape(1, len(s))))
-            # current_cluster = clusterId
-
-            agentState = minerEnv.get_agent_state(clusterId)
+            print("#################################################################")
             action, goldPos = minerEnv.get_action()
-            # print("Debug action", action)
+            if(action == 0 and prevAction == 1) or (action == 1 and prevAction == 0) or (action == 2 and prevAction == 3) or (action ==3 and prevAction ==2):
+                print("Prev gold: ", prevGoldPos)
+                print("current gold: ", goldPos)
+                
+            print("At step %d:\n\tCurrent gold: %d\n\tCurrent energy: %d\n\tAction: %s" % (
+                count_step, minerEnv.state.score, minerEnv.state.energy, action_map[action]))
             minerEnv.step(str(action))
-            s = minerEnv.get_state()  # Getting a new state
-            ''' Get reward '''
-            # reward += minerEnv.get_reward()  # Getting a reward
-            # count_step += 1
+            prevAction = action
+            prevGoldPos = goldPos
+            # s_next = minerEnv.get_state()  # Getting a new state
+            # s = s_next
+            count_step += 1
+            # if count_step > 33:
+            #     break
         except Exception as e:
             import traceback
             traceback.print_exc()
