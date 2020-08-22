@@ -218,6 +218,7 @@ class MinerEnv:
         if goldAmountAtCurrentPosition >= 50:
             self.agentState = AgentState.MINING
             return self.agentState
+        return None
 
     def get_agent_state(self,  agentCluster=None):
         if len(self.state.mapInfo.golds) == 0:
