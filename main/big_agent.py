@@ -64,7 +64,7 @@ class BigAgent:
     def step(self):  # step process
         if self.countStep % 10 == 0:
             self.currentAgent = random.randint(0,2)
-            print("Debug multi-strategy: ", self.agent_id, self.currentAgent)
+            # print("Debug multi-strategy: ", self.agent_id, self.currentAgent)
         action, goldPos = self.strategy[self.currentAgent].get_action()
         self.countStep += 1
         return action
