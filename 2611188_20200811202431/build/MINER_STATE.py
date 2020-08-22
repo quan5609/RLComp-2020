@@ -24,6 +24,7 @@ class MapInfo:
         self.obstacles = gameInfo["obstacles"]
         self.maxStep = gameInfo["steps"]
         self.numberOfPlayers = gameInfo["numberOfPlayers"]
+        # print(gameInfo["width"], gameInfo["height"])
         self.map = [[1]*gameInfo["width"] for i in range(gameInfo["height"])]
         for ob in self.obstacles:
             # for RLCOMP
@@ -35,6 +36,16 @@ class MapInfo:
                 self.map[ob["posy"]][ob["posx"]] = 10
             elif ob["type"] == 3:
                 self.map[ob["posy"]][ob["posx"]] = -ob["value"]
+
+            # for TEST
+            # if ob["type"] == 0:
+            #     self.map[ob["posx"]][ob["posy"]] = 1
+            # elif ob["type"] == 1:
+            #     self.map[ob["posx"]][ob["posy"]] = 3
+            # elif ob["type"] == 2:
+            #     self.map[ob["posx"]][ob["posy"]] = 2
+            # elif ob["type"] == 3:
+            #     self.map[ob["posx"]][ob["posy"]] = 3
         for gold in self.golds:
             self.map[gold["posy"]][gold["posx"]] = 4
 
@@ -52,8 +63,7 @@ class MapInfo:
                 if not exist:
                     cluster.goldArray.remove(gold)
             cluster.update()
-            if cluster.total_gold <= 0:
-                self.clusterList.remove(cluster)
+
 
     def update(self, golds, changedObstacles):
         self.golds = golds
@@ -69,6 +79,15 @@ class MapInfo:
             elif cob["type"] == 3:
                 self.map[cob["posy"]][cob["posx"]] = -cob["value"]
 
+            # for TEST
+            # if ob["type"] == 0:
+            #     self.map[ob["posx"]][ob["posy"]] = 1
+            # elif ob["type"] == 1:
+            #     self.map[ob["posx"]][ob["posy"]] = 3
+            # elif ob["type"] == 2:
+            #     self.map[ob["posx"]][ob["posy"]] = 2
+            # elif ob["type"] == 3:
+            #     self.map[ob["posx"]][ob["posy"]] = 3
             newOb = True
             for ob in self.obstacles:
                 if cob["posx"] == ob["posx"] and cob["posy"] == ob["posy"]:
@@ -109,7 +128,6 @@ class MapInfo:
 
     def get_cell_cost(self, x, y):
         if x < 0 or x > self.max_x or y < 0 or y > self.max_y:
-            # print("Invalid position", x, y)
             return -1
         return self.map[y][x]
 
@@ -138,7 +156,7 @@ class State:
     def __init__(self):
         self.end = False
         self.score = 0
-        self.lastAction = -1
+        self.lastAction = None
         self.id = 0
         self.x = 0
         self.y = 0
@@ -160,11 +178,10 @@ class State:
         self.mapInfo.init_map(game_info["gameinfo"])
         self.stepCount = 0
         self.status = State.STATUS_PLAYING
-        # self.players = []
-        self.players = [{"playerId": 2, "posx": self.x, "posy": self.y, "energy": self.energy, "score": 0, "lastAction": -1, "status": State.STATUS_PLAYING},
-                        {"playerId": 3, "posx": self.x, "posy": self.y,  "energy": self.energy,
-                            "score": 0, "lastAction": -1, "status": State.STATUS_PLAYING},
-                        {"playerId": 4, "posx": self.x, "posy": self.y,  "energy": self.energy, "score": 0, "lastAction": -1, "status": State.STATUS_PLAYING}]
+        self.players = []
+        # self.players = [{"playerId": 2, "posx": self.x, "posy": self.y},
+        #                 {"playerId": 3, "posx": self.x, "posy": self.y},
+        #                 {"playerId": 4, "posx": self.x, "posy": self.y}]
 
     def update_state(self, data):
         new_state = str_2_json(data)
@@ -180,8 +197,6 @@ class State:
             elif player["status"] == 0:  # still playing
                 self.players.append(player)
 
-        # if len(self.players) != 3:
-        #     print("Debug message:", new_state["players"])
         self.mapInfo.update(new_state["golds"], new_state["changedObstacles"])
         # self.players = new_state["players"]
         # for i in range(len(self.players), 4, 1):
