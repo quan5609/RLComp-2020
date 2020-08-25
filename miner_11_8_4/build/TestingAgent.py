@@ -7,14 +7,15 @@ simplefilter(action='ignore', category=FutureWarning)
 
 
 
-
 ACTION_GO_LEFT = 0
 ACTION_GO_RIGHT = 1
 ACTION_GO_UP = 2
 ACTION_GO_DOWN = 3
 ACTION_FREE = 4
 ACTION_CRAFT = 5
-
+HOST = "localhost"
+# PORT = int(sys.argv[1])
+PORT = 1111
 if len(sys.argv) == 3:
     HOST = str(sys.argv[1])
     PORT = int(sys.argv[2])
@@ -40,10 +41,10 @@ try:
         try:
             print("#################################################################")
             action, goldPos = minerEnv.get_action()
-            if(action == 0 and prevAction == 1) or (action == 1 and prevAction == 0) or (action == 2 and prevAction == 3) or (action ==3 and prevAction ==2):
+            if(action == 0 and prevAction == 1) or (action == 1 and prevAction == 0) or (action == 2 and prevAction == 3) or (action == 3 and prevAction == 2):
                 print("Prev gold: ", prevGoldPos)
                 print("current gold: ", goldPos)
-                
+
             print("At step %d:\n\tCurrent gold: %d\n\tCurrent energy: %d\n\tAction: %s" % (
                 count_step, minerEnv.state.score, minerEnv.state.energy, action_map[action]))
             minerEnv.step(str(action))

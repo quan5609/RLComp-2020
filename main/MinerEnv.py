@@ -21,6 +21,7 @@ TreeID = 1
 TrapID = 2
 SwampID = 3
 
+
 class MinerEnv:
     def __init__(self, host, port):
         self.socket = GameSocket(host, port)
@@ -151,7 +152,7 @@ class MinerEnv:
 
     def getClusterState(self, cluster):
         if cluster.total_gold <= 0:
-            return [0,0,0,0,0]
+            return [0, 0, 0, 0, 0]
 
         x, y = cluster.center_x, cluster.center_y
         terrainCost = 0
@@ -160,23 +161,26 @@ class MinerEnv:
                 checkCell = self.state.mapInfo.get_cell_cost(i, j)
                 checkObj = self.state.mapInfo.get_obstacle(i, j)
                 if checkCell != -1 and checkObj != -1:
-                    if checkObj == 1: # tree
+                    if checkObj == 1:  # tree
                         terrainCost += 1
-                    elif checkObj == 3: # swarm
+                    elif checkObj == 3:  # swarm
                         terrainCost += 2
         pathCost = self.new_estimatePathCost(
             self.state.x, self.state.y, cluster.center_x, cluster.center_y)
-        result = [np.log(cluster.total_gold+1), cluster.center_x, cluster.center_y, np.log(pathCost+1), terrainCost]
+        result = [np.log(cluster.total_gold+1), cluster.center_x,
+                  cluster.center_y, np.log(pathCost+1), terrainCost]
 
         return result
 
     def get_state(self):
         # Player State
-        player_state = [self.state.x, self.state.y, self.state.energy, self.state.lastAction]
+        player_state = [self.state.x, self.state.y,
+                        self.state.energy, self.state.lastAction]
         # print("BUG", self.state.players)
         for player in self.state.players:
             # print("Debug state bot:", player)
-            player_state += [player['posx'], player['posy'], player['energy'], player['lastAction']]
+            player_state += [player['posx'], player['posy'],
+                             player['energy'], player['lastAction']]
 
         if len(player_state) < 16:
             player_state += [0] * (16 - len(player_state))
@@ -218,6 +222,7 @@ class MinerEnv:
         if goldAmountAtCurrentPosition >= 50:
             self.agentState = AgentState.MINING
             return self.agentState
+        return None
 
     def get_agent_state(self,  agentCluster=None):
         if len(self.state.mapInfo.golds) == 0:
@@ -307,7 +312,6 @@ class MinerEnv:
             # goldPos = {"posx": self.state.x, "posy": self.state.y,
             #            "amount": self.estimateReceivedGold(self.state.x, self.state.y)}
 
-
         if self.isSleeping:
             if self.state.energy >= 36 and energyOfBest > 0:
                 self.isSleeping = False
@@ -355,7 +359,8 @@ class MinerEnv:
         # costMatrix = self.state.mapInfo.map[min(starty, endy): max(starty, endy)][min(startx, endx): max(startx, endx)]
         # dpCost = [[0]*abs(startx - endx) for i in range(abs(starty - endy))]
         costMatrix = self.state.mapInfo.map
-        dpCost = [[0]*(self.state.mapInfo.max_x+1) for i in range(self.state.mapInfo.max_y+1)]
+        dpCost = [[0]*(self.state.mapInfo.max_x+1)
+                  for i in range(self.state.mapInfo.max_y+1)]
 
         i = endx - hstep
         j = endy
@@ -367,12 +372,13 @@ class MinerEnv:
         while ((starty < endy and j >= starty) or (starty >= endy and j <= starty)):
             dpCost[j][i] = dpCost[j+vstep][i] + costMatrix[j+vstep][i]
             j = j - vstep
-        
+
         j = endy - vstep
         while ((starty < endy and j >= starty) or (starty >= endy and j <= starty)):
             i = endx - hstep
             while ((startx < endx and i >= startx) or (startx >= endx and i <= startx)):
-                dpCost[j][i] = min(dpCost[j][i+hstep] + costMatrix[j][i+hstep], dpCost[j+vstep][i] + costMatrix[j+vstep][i])
+                dpCost[j][i] = min(dpCost[j][i+hstep] + costMatrix[j]
+                                   [i+hstep], dpCost[j+vstep][i] + costMatrix[j+vstep][i])
                 i = i - hstep
             j = j - vstep
         return dpCost[starty][startx]

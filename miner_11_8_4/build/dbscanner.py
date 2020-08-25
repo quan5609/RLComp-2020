@@ -4,7 +4,7 @@ import math
 
 UNCLASSIFIED = False
 NOISE = None
-EPS = 3
+EPS = 4
 
 
 def _dist(p, q):
