@@ -29,7 +29,6 @@ status_map = {0: "STATUS_PLAYING", 1: "STATUS_ELIMINATED_WENT_OUT_MAP", 2: "STAT
 action_map = {0: "GO LEFT", 1: "GO RIGHT",
               2: "GO UP", 3: "GO DOWN", 4: "SLEEP", 5: "DIG GOLD"}
 
-init_pos = [[16,0],[13,5],[9,1],[4,4],[3,3]]
 
 prevAction = - 1
 prevGoldPos = None
@@ -37,22 +36,23 @@ reward = 0
 current_state = None
 current_cluster = None
 current_cluster_id = None
+init_pos = [[16, 0], [13, 5], [9, 1], [4, 4], [3, 3]]
 
 now = datetime.datetime.now()  # Getting the latest datetime
-header = ["Ep", "Step", "Reward", "Total_reward", "Action", "Epsilon",
-          "Done", "Termination_Code"]  # Defining header for the save file
-filename = "Data/data_" + now.strftime("%Y%m%d-%H%M") + ".csv"
-with open(filename, 'w') as f:
-    pd.DataFrame(columns=header).to_csv(
-        f, encoding='utf-8', index=False, header=True)
+# header = ["Ep", "Step", "Reward", "Total_reward", "Action", "Epsilon",
+#           "Done", "Termination_Code"]  # Defining header for the save file
+# filename = "Data/data_" + now.strftime("%Y%m%d-%H%M") + ".csv"
+# with open(filename, 'w') as f:
+#     pd.DataFrame(columns=header).to_csv(
+#         f, encoding='utf-8', index=False, header=True)
 '''----------------------------------------------'''
 # Parameters for training a DQN model
-N_EPISODE = 10000  # The number of episodes for training
+N_EPISODE = 100000  # The number of episodes for training
 MAX_STEP = 1000  # The number of steps for each episode
 BATCH_SIZE = 32  # The number of experiences for each replay
 MEMORY_SIZE = 100000  # The size of the batch for storing experiences
 # After this number of episodes, the DQN model is saved for testing later.
-SAVE_NETWORK = 100
+SAVE_NETWORK = 500
 # The number of experiences are stored in the memory batch before starting replaying
 INITIAL_REPLAY_SIZE = 1000
 INPUTNUM = 66  # The number of input values for the DQN model
@@ -74,7 +74,6 @@ for episode_i in range(0, N_EPISODE):
         # Choosing a map ID from 5 maps in Maps folder randomly
         mapID = np.random.randint(1, 6)
         # Choosing a initial position of the DQN agent on X-axes randomly
-        # posID_x = np.random.randint(MAP_MAX_X)
         posID_x = init_pos[mapID-1][0]
         # Choosing a initial position of the DQN agent on Y-axes randomly
         # posID_y = np.random.randint(MAP_MAX_Y)
@@ -82,7 +81,7 @@ for episode_i in range(0, N_EPISODE):
         # Creating a request for initializing a map, initial position, the initial energy, and the maximum number of steps of the DQN agent
         request = ("map" + str(mapID) + "," + str(posID_x) +
                    "," + str(posID_y) + ",50,100")
-        print("Debug request:", request)
+        # print("Debug request:", request)
         # Send the request to the game environment (GAME_SOCKET_DUMMY.py)
         minerEnv.send_map_info(request)
         minerEnv.reset()
@@ -96,7 +95,6 @@ for episode_i in range(0, N_EPISODE):
             # print(
             #     "#################################################################")
             # If agent is mining, not update !
-            # if not mining
             if minerEnv.check_mining():
                 action, goldPos = minerEnv.get_action()
                 # print("Debug action", action)
@@ -107,7 +105,6 @@ for episode_i in range(0, N_EPISODE):
                 s = minerEnv.get_state()
                 count_step += 1
                 continue
-
 
             if current_state is not None:
                 # Add this transition to the memory batch
@@ -129,11 +126,11 @@ for episode_i in range(0, N_EPISODE):
                 # s = s_next  # Assign the next state for the next step.
 
                 # Saving data to file
-                save_data = np.hstack(
-                    [episode_i + 1, count_step + 1, reward, total_reward, current_cluster, DQNAgent.epsilon, minerEnv.check_terminate()]).reshape(1, 7)
-                with open(filename, 'a') as f:
-                    pd.DataFrame(save_data).to_csv(
-                        f, encoding='utf-8', index=False, header=False)
+                # save_data = np.hstack(
+                #     [episode_i + 1, count_step + 1, reward, total_reward, current_cluster, DQNAgent.epsilon, minerEnv.check_terminate()]).reshape(1, 7)
+                # with open(filename, 'a') as f:
+                #     pd.DataFrame(save_data).to_csv(
+                #         f, encoding='utf-8', index=False, header=False)
 
                 if minerEnv.check_terminate() == True:
                     # If the episode ends, then go to the next episode
@@ -151,12 +148,14 @@ for episode_i in range(0, N_EPISODE):
                         reward -= 100
                 if minerEnv.targetCluster is not None:
                     if minerEnv.sorted_cluster_list[clusterId]._id != minerEnv.targetCluster._id:
-                        reward -= 200
+                        reward -= 600
             current_cluster = clusterId
             
 
             agentState = minerEnv.get_agent_state(clusterId)
             action, goldPos = minerEnv.get_action()
+            # print("At step %d:\n\tCurrent gold: %d\n\tCurrent energy: %d\n\tAction: %s" % (
+            #     count_step, minerEnv.state.score, minerEnv.state.energy, action_map[action]))
             # print("Debug action", action)
             minerEnv.step(str(action))
             prevAction = action
@@ -172,9 +171,11 @@ for episode_i in range(0, N_EPISODE):
             DQNAgent.target_train()
             # Save the DQN model
             now = datetime.datetime.now()  # Get the latest datetime
-            print("BUGGGGGGGGG")
+            # print("BUGGGGGGGGG")
             DQNAgent.save_model("TrainedModels/",
-                                "DQNmodel_" + now.strftime("%Y%m%d-%H%M") + "_ep" + str(episode_i + 1))
+                                "DQNmodel_latest")
+            DQNAgent.save_target_model("TrainedModels/",
+                                "DQNmodel_target_latest")
 
         # Print the training information after the episode
 

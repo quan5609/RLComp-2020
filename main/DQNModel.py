@@ -30,6 +30,13 @@ class DQN:
             sess=None
             
     ):
+      #Tensorflow GPU optimization
+      config = tf.compat.v1.ConfigProto()
+      config.gpu_options.allow_growth = True
+      self.sess = tf.compat.v1.Session(config=config)
+      K.set_session(sess)
+      self.sess.run( tf.compat.v1.global_variables_initializer()) 
+
       self.input_dim = input_dim
       self.action_space = action_space
       self.gamma = gamma
@@ -40,16 +47,31 @@ class DQN:
       self.tau = tau
             
       #Creating networks
-      self.model        = self.create_model() #Creating the DQN model
+      self.model        = self.load_model() #Creating the DQN model
       self.target_model = self.create_model() #Creating the DQN target model
       
-      #Tensorflow GPU optimization
-      config = tf.compat.v1.ConfigProto()
-      config.gpu_options.allow_growth = True
-      self.sess = tf.compat.v1.Session(config=config)
-      K.set_session(sess)
-      self.sess.run( tf.compat.v1.global_variables_initializer()) 
       
+    
+    def load_model(self):
+      # load json and create model
+      json_file = open('/home/khmt/nddung/RLComp-2020/1234/main/TrainedModels/DQNmodel_latest.json', 'r')
+      loaded_model_json = json_file.read()
+      json_file.close()
+      loaded_model = model_from_json(loaded_model_json)
+      # print(loaded_model.get_weights())
+      # load weights into new model
+      loaded_model.load_weights("/home/khmt/nddung/RLComp-2020/1234/main/TrainedModels/DQNmodel_latest.h5")
+      # print(loaded_model.get_weights())
+      # model = self.create_model()
+      # print(loaded_model.summary())
+      # model = model.load_weights('/home/khmt/nddung/RLComp-2020/1234/main/TrainedModels/DQNmodel_20200816-0902_ep2400.h5') 
+      sgd = optimizers.SGD(lr=self.learning_rate, decay=1e-6, momentum=0.95)
+      loaded_model.compile(optimizer = sgd,
+              loss='mse')
+      print(loaded_model.summary())
+      return loaded_model
+
+
     def create_model(self):
       #Creating the network
       #Two hidden layers (300,300), their activation is ReLu
@@ -124,6 +146,15 @@ class DQN:
             json_file.write(model_json)
             # serialize weights to HDF5
             self.model.save_weights(path + model_name + ".h5")
+            print("Saved model to disk")
+
+    def save_target_model(self,path, model_name):
+        # serialize model to JSON
+        model_json = self.target_model.to_json()
+        with open(path + model_name + ".json", "w") as json_file:
+            json_file.write(model_json)
+            # serialize weights to HDF5
+            self.target_model.save_weights(path + model_name + ".h5")
             print("Saved model to disk")
  
 
