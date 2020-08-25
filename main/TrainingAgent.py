@@ -29,6 +29,8 @@ status_map = {0: "STATUS_PLAYING", 1: "STATUS_ELIMINATED_WENT_OUT_MAP", 2: "STAT
 action_map = {0: "GO LEFT", 1: "GO RIGHT",
               2: "GO UP", 3: "GO DOWN", 4: "SLEEP", 5: "DIG GOLD"}
 
+init_pos = [[16,0],[13,5],[9,1],[4,4],[3,3]]
+
 prevAction = - 1
 prevGoldPos = None
 reward = 0
@@ -70,11 +72,13 @@ for episode_i in range(0, N_EPISODE):
         minerEnv.start()  # Connect to the game
         # mapID = 5
         # Choosing a map ID from 5 maps in Maps folder randomly
-        mapID = np.random.randint(1, 8)
+        mapID = np.random.randint(1, 6)
         # Choosing a initial position of the DQN agent on X-axes randomly
-        posID_x = np.random.randint(MAP_MAX_X)
+        # posID_x = np.random.randint(MAP_MAX_X)
+        posID_x = init_pos[mapID-1][0]
         # Choosing a initial position of the DQN agent on Y-axes randomly
-        posID_y = np.random.randint(MAP_MAX_Y)
+        # posID_y = np.random.randint(MAP_MAX_Y)
+        posID_y = init_pos[mapID-1][1]
         # Creating a request for initializing a map, initial position, the initial energy, and the maximum number of steps of the DQN agent
         request = ("map" + str(mapID) + "," + str(posID_x) +
                    "," + str(posID_y) + ",50,100")
@@ -92,6 +96,7 @@ for episode_i in range(0, N_EPISODE):
             # print(
             #     "#################################################################")
             # If agent is mining, not update !
+            # if not mining
             if minerEnv.check_mining():
                 action, goldPos = minerEnv.get_action()
                 # print("Debug action", action)
@@ -102,6 +107,7 @@ for episode_i in range(0, N_EPISODE):
                 s = minerEnv.get_state()
                 count_step += 1
                 continue
+
 
             if current_state is not None:
                 # Add this transition to the memory batch

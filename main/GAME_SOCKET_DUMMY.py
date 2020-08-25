@@ -6,6 +6,7 @@ import math
 from agent_8_8 import Agent_8_8
 from agent_11_8 import Agent_11_8
 from agent_dummy import Agent_Dummy
+from big_agent import BigAgent
 from random import randrange
 
 
@@ -119,7 +120,8 @@ class GameSocket:
         self.craftMap = {}  # cells that players craft at current step, key: x_y, value: number of players that craft at (x,y)
 
     def init_bots(self):
-        self.bots = [Agent_8_8(2), Agent_11_8(3), Agent_Dummy(4)]  # use bot1(id=2), bot2(id=3), bot3(id=4)
+        self.bots = [BigAgent(2),BigAgent(3),BigAgent(4)]
+        # self.bots = [Agent_8_8(2), Agent_11_8(3), Agent_Dummy(4)]  # use bot1(id=2), bot2(id=3), bot3(id=4)
         for (bot) in self.bots:  # at the beginning, all bots will have same position, energy as player
             bot.info.posx = self.user.posx
             bot.info.posy = self.user.posy
@@ -234,7 +236,8 @@ class GameSocket:
             for bot in self.bots:
                 if bot.info.status == PlayerInfo.STATUS_PLAYING:
                     action = bot.step()
-                    bot.info.lastAction = action
+                    bot.updateLastAction(action)
+                    # bot.info.lastAction = action
                     # print("Bot Action: ", action)
                     self.step_action(bot.info, action)
             self.action_5_craft()
