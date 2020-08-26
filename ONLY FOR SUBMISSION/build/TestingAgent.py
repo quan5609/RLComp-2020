@@ -39,26 +39,14 @@ count_step = 0
 
 prevAction = - 1
 prevGoldPos = None
-init_pos = [[16, 0], [13, 5], [9, 1], [4, 4], [3, 3]]
 
 try:
     # Initialize environment
     minerEnv = MinerEnv(HOST, PORT)
     minerEnv.start()  # Connect to the game
-    mapID = 3
-    # Choosing a initial position of the DQN agent on X-axes randomly
-    posID_x = init_pos[mapID-1][0]
-    # Choosing a initial position of the DQN agent on Y-axes randomly
-    # posID_y = np.random.randint(MAP_MAX_Y)
-    posID_y = init_pos[mapID-1][1]
-    # Creating a request for initializing a map, initial position, the initial energy, and the maximum number of steps of the DQN agent
-    request = ("map" + str(mapID) + "," + str(posID_x) +
-               "," + str(posID_y) + ",50,100")
-    # print("Debug request:", request)
-    # Send the request to the game environment (GAME_SOCKET_DUMMY.py)
-    minerEnv.send_map_info(request)
+
     minerEnv.reset()
-    # print(minerEnv.state.mapInfo.golds)
+    print(minerEnv.state.mapInfo.golds)
 
     s = minerEnv.get_state()  # Getting an initial state
     while not minerEnv.check_terminate():
