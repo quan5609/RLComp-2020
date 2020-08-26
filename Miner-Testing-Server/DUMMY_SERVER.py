@@ -8,14 +8,16 @@ import socket
 import os
 # import numpy as np
 
+INIT_POS = [[16,0],[13,5],[9,1],[4,4],[3,3]]
 MAP_DIR = "../Miner-Training-Local-CodeSample/Maps/"
-MAP_ID = 5
-POS_X = 0
-POS_Y = 0
+MAP_ID = 3
+POS_X = INIT_POS[MAP_ID-1][0]
+POS_Y = INIT_POS[MAP_ID-1][1]
 E = 50
 MAX_STEP = 100
 W = 21
 H = 9
+
 
 
 class ObstacleInfo:

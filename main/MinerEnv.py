@@ -339,12 +339,15 @@ class MinerEnv:
             # else:
             #     self.countGoCluster += 1
             bestValue = 10000
+            bestManCost = 0
             for action in actions:
                 # print("\tTry action: ", action)
                 posx, posy, energy = self.get_successor(action)
                 pathCost = self.new_estimatePathCost(
                     posx, posy, self.targetDesx, self.targetDesy)
-                if pathCost < bestValue:
+                manCost = self.mahattan(posx, posy, self.targetDesx, self.targetDesy)
+                if pathCost < bestValue and (bestValue == 10000 or manCost <= bestManCost):
+                    bestManCost = manCost
                     bestValue = pathCost
                     bestAction = action
                     energyOfBest = energy
@@ -385,7 +388,7 @@ class MinerEnv:
         vstep = 1 if endy > starty else -1
 
         if startx == endx and starty == endy:
-            return 0
+            return self.state.mapInfo.map[starty][startx]
 
         if startx == endx:
             cost = 0
@@ -393,7 +396,7 @@ class MinerEnv:
             while(idx != starty):
                 cost += self.state.mapInfo.map[idx][startx]
                 idx = idx - vstep
-            return cost
+            return cost + self.state.mapInfo.map[starty][startx]
 
         if starty == endy:
             cost = 0
@@ -401,7 +404,7 @@ class MinerEnv:
             while(idx != startx):
                 cost += self.state.mapInfo.map[starty][idx]
                 idx = idx - hstep
-            return cost
+            return cost + self.state.mapInfo.map[starty][startx]
 
         # costMatrix = self.state.mapInfo.map[min(starty, endy): max(starty, endy)][min(startx, endx): max(startx, endx)]
         # dpCost = [[0]*abs(startx - endx) for i in range(abs(starty - endy))]
@@ -428,7 +431,7 @@ class MinerEnv:
                                    [i+hstep], dpCost[j+vstep][i] + costMatrix[j+vstep][i])
                 i = i - hstep
             j = j - vstep
-        return dpCost[starty][startx]
+        return dpCost[starty][startx] + self.state.mapInfo.map[starty][startx]
 
     def estimatePathCost(self, startx, starty, endx, endy):
         hstep = 1 if endx > startx else -1
