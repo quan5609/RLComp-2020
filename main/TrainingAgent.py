@@ -66,6 +66,7 @@ train = False
 # Start training episodes
 for episode_i in range(0, N_EPISODE):
     try:
+        episode_memory = []
         count_step = 0
         # Initialize environment
         minerEnv = MinerEnv(HOST, PORT)
@@ -110,16 +111,8 @@ for episode_i in range(0, N_EPISODE):
                 # Add this transition to the memory batch
                 # if len(current_state) < 48 or len(s) < 48:
                 #     print(s)
-                memory.push(current_state, current_cluster,
-                            reward, minerEnv.check_terminate(), s)
-                # Sample batch memory to train network
-                if (memory.length > INITIAL_REPLAY_SIZE):
-                    # If there are INITIAL_REPLAY_SIZE experiences in the memory batch
-                    # then start replaying
-                    # Get a BATCH_SIZE experiences for replaying
-                    batch = memory.sample(BATCH_SIZE)
-                    DQNAgent.replay(batch, BATCH_SIZE)  # Do relaying
-                    train = True  # Indicate the training starts
+                episode_memory.append(
+                    [current_state, current_cluster, reward, minerEnv.check_terminate(), s])
                 # Plus the reward to the total rewad of the episode
                 total_reward = total_reward + reward
                 reward = 0
@@ -139,7 +132,7 @@ for episode_i in range(0, N_EPISODE):
             current_state = s
             # print("State:", s)
             clusterId = DQNAgent.act(s)
-            
+
             if clusterId >= minerEnv.clusterNum:
                 reward -= 1000
             else:
@@ -148,9 +141,8 @@ for episode_i in range(0, N_EPISODE):
                         reward -= 100
                 if minerEnv.targetCluster is not None:
                     if minerEnv.sorted_cluster_list[clusterId]._id != minerEnv.targetCluster._id:
-                        reward -= 600
+                        reward -= 500
             current_cluster = clusterId
-            
 
             agentState = minerEnv.get_agent_state(clusterId)
             action, goldPos = minerEnv.get_action()
@@ -166,6 +158,24 @@ for episode_i in range(0, N_EPISODE):
             count_step += 1
             # Iteration to save the network architecture and weights
 
+        final_gold = minerEnv.state.score
+        print("Final Gold:", final_gold, len(episode_memory))
+        total_reward += count_step*(final_gold//4)
+
+        for mem_record in episode_memory:
+            current_state, current_cluster, reward, terminate, s = mem_record
+            reward += final_gold//4
+            memory.push(current_state, current_cluster,
+                        reward, terminate, s)
+            # Sample batch memory to train network
+            if (memory.length > INITIAL_REPLAY_SIZE):
+                # If there are INITIAL_REPLAY_SIZE experiences in the memory batch
+                # then start replaying
+                # Get a BATCH_SIZE experiences for replaying
+                batch = memory.sample(BATCH_SIZE)
+                DQNAgent.replay(batch, BATCH_SIZE)  # Do relaying
+                train = True  # Indicate the training starts
+
         if (np.mod(episode_i + 1, SAVE_NETWORK) == 0 and train == True):
             # Replace the learning weights for target model with soft replacement
             DQNAgent.target_train()
@@ -175,7 +185,7 @@ for episode_i in range(0, N_EPISODE):
             DQNAgent.save_model("TrainedModels/",
                                 "DQNmodel_latest")
             DQNAgent.save_target_model("TrainedModels/",
-                                "DQNmodel_target_latest")
+                                       "DQNmodel_target_latest")
 
         # Print the training information after the episode
 
