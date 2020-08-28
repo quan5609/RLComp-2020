@@ -49,19 +49,31 @@ now = datetime.datetime.now()  # Getting the latest datetime
 # Parameters for training a DQN model
 N_EPISODE = 100000  # The number of episodes for training
 MAX_STEP = 1000  # The number of steps for each episode
-BATCH_SIZE = 32  # The number of experiences for each replay
+BATCH_SIZE = 8  # The number of experiences for each replay
 MEMORY_SIZE = 100000  # The size of the batch for storing experiences
 # After this number of episodes, the DQN model is saved for testing later.
 SAVE_NETWORK = 500
 # The number of experiences are stored in the memory batch before starting replaying
-INITIAL_REPLAY_SIZE = 1000
+INITIAL_REPLAY_SIZE = 200
 INPUTNUM = 66  # The number of input values for the DQN model
 ACTIONNUM = 8  # The number of actions output from the DQN model
 MAP_MAX_X = 21  # Width of the Map
 MAP_MAX_Y = 9  # Height of the Map
+
+
+def check_buffer_ready(mem_list):
+    for mem in mem_list:
+        if mem.length < INITIAL_REPLAY_SIZE:
+            return False
+    return True
+
+
 '''----------------------------------------------'''
 DQNAgent = DQN(INPUTNUM, ACTIONNUM)
-memory = Memory(MEMORY_SIZE)
+memory_list = []
+for mapId in range(1, 6):
+    memory_list.append(Memory(mapId, MEMORY_SIZE))
+[print(x.mapId) for x in memory_list]
 train = False
 # Start training episodes
 for episode_i in range(0, N_EPISODE):
@@ -74,6 +86,8 @@ for episode_i in range(0, N_EPISODE):
         # mapID = 5
         # Choosing a map ID from 5 maps in Maps folder randomly
         mapID = np.random.randint(1, 6)
+        memory = memory_list[mapID - 1]
+        print("BUFFER ID:", memory.mapId)
         # Choosing a initial position of the DQN agent on X-axes randomly
         posID_x = init_pos[mapID-1][0]
         # Choosing a initial position of the DQN agent on Y-axes randomly
@@ -168,12 +182,27 @@ for episode_i in range(0, N_EPISODE):
             memory.push(current_state, current_cluster,
                         reward, terminate, s)
             # Sample batch memory to train network
-            if (memory.length > INITIAL_REPLAY_SIZE):
+            if (check_buffer_ready(memory_list)):
                 # If there are INITIAL_REPLAY_SIZE experiences in the memory batch
                 # then start replaying
                 # Get a BATCH_SIZE experiences for replaying
-                batch = memory.sample(BATCH_SIZE)
-                DQNAgent.replay(batch, BATCH_SIZE)  # Do relaying
+                batch = None
+                for mem in memory_list:
+                    temp = mem.sample(BATCH_SIZE)
+                    # print(temp)
+                    if batch is None:
+                        batch = temp
+                    s, a, r, s2, d = batch
+                    curS, curA, curR, curS2, curD = temp
+                    s = np.concatenate((s, curS))
+                    a = np.concatenate((a, curA))
+                    r = np.concatenate((r, curR))
+                    s2 = np.concatenate((s2, curS2))
+                    d = np.concatenate((d, curD))
+                    batch = list([s, a, r, s2, d])
+
+                    # batch += temp
+                DQNAgent.replay(batch, BATCH_SIZE*5)  # Do relaying
                 train = True  # Indicate the training starts
 
         if (np.mod(episode_i + 1, SAVE_NETWORK) == 0 and train == True):
