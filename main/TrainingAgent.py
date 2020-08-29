@@ -152,10 +152,10 @@ for episode_i in range(0, N_EPISODE):
             else:
                 if minerEnv.currentCluster is not None:
                     if minerEnv.sorted_cluster_list[clusterId]._id != minerEnv.currentCluster._id:
-                        reward -= 100
+                        reward -= 500
                 if minerEnv.targetCluster is not None:
                     if minerEnv.sorted_cluster_list[clusterId]._id != minerEnv.targetCluster._id:
-                        reward -= 500
+                        reward -= 1000
             current_cluster = clusterId
 
             agentState = minerEnv.get_agent_state(clusterId)

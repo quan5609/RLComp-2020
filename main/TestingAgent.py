@@ -45,7 +45,7 @@ try:
     # Initialize environment
     minerEnv = MinerEnv(HOST, PORT)
     minerEnv.start()  # Connect to the game
-    mapID = 5
+    mapID = 4
     # Choosing a initial position of the DQN agent on X-axes randomly
     posID_x = init_pos[mapID-1][0]
     # Choosing a initial position of the DQN agent on Y-axes randomly
@@ -78,7 +78,15 @@ try:
             # print("State:", s)
             clusterId = np.argmax(DQNAgent.predict(s.reshape(1, len(s))))
             # current_cluster = clusterId
-
+            # else:
+            if clusterId >= minerEnv.clusterNum:
+                print("Chon ngu")
+            if minerEnv.currentCluster is not None:
+                if minerEnv.sorted_cluster_list[clusterId]._id != minerEnv.currentCluster._id:
+                    print("Change IN")
+            if minerEnv.targetCluster is not None:
+                if minerEnv.sorted_cluster_list[clusterId]._id != minerEnv.targetCluster._id:
+                    print("Change OUT")
             agentState = minerEnv.get_agent_state(clusterId)
             action, goldPos = minerEnv.get_action()
             # print("Debug action", action)

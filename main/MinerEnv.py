@@ -345,7 +345,8 @@ class MinerEnv:
                 posx, posy, energy = self.get_successor(action)
                 pathCost = self.new_estimatePathCost(
                     posx, posy, self.targetDesx, self.targetDesy)
-                manCost = self.mahattan(posx, posy, self.targetDesx, self.targetDesy)
+                manCost = self.mahattan(
+                    posx, posy, self.targetDesx, self.targetDesy)
                 if pathCost < bestValue and (bestValue == 10000 or manCost <= bestManCost):
                     bestManCost = manCost
                     bestValue = pathCost
@@ -365,7 +366,8 @@ class MinerEnv:
                     bestAction = action
                     energyOfBest = energy
                     goldPos = gold
-
+                print("Gold:", goldPos)
+                print("Pos:", posx, posy)
         elif self.agentState == AgentState.MINING:
             bestAction = 5
             energyOfBest = self.state.energy - 5
