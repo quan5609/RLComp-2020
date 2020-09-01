@@ -31,7 +31,7 @@ class PlayerInfo:
 
 class BigAgent:
     def __init__(self, agentId):
-        seed = agentId + int(time.time()) % 100000
+        seed = agentId + int(time.time())
         random.seed(seed)
         self.agent_id = agentId
         self.info = PlayerInfo(self.agent_id)
