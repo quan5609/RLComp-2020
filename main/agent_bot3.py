@@ -173,7 +173,7 @@ class Agent_Bot3:
                     break
                 i += hstep
             totalCostLH = hcost + vcost
-        totalCostLH = max(0, totalCostLH - bGold//20)
+        totalCostLH = max(0, totalCostLH - vGold//20)
         return min(totalCostHL, totalCostLH)
 
     def check_terminate(self):

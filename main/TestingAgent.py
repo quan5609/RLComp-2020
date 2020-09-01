@@ -45,7 +45,7 @@ try:
     # Initialize environment
     minerEnv = MinerEnv(HOST, PORT)
     minerEnv.start()  # Connect to the game
-    mapID = 2
+    mapID = 5
     # Choosing a initial position of the DQN agent on X-axes randomly
     posID_x = init_pos[mapID-1][0]
     # Choosing a initial position of the DQN agent on Y-axes randomly
