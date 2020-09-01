@@ -85,7 +85,7 @@ for episode_i in range(0, N_EPISODE):
         minerEnv.start()  # Connect to the game
         # mapID = 5
         # Choosing a map ID from 5 maps in Maps folder randomly
-        mapID = np.random.randint(1, 6)
+        mapID = episode_i % 5 + 1
         memory = memory_list[mapID - 1]
         print("BUFFER ID:", memory.mapId)
         # Choosing a initial position of the DQN agent on X-axes randomly
@@ -149,13 +149,13 @@ for episode_i in range(0, N_EPISODE):
 
             if clusterId >= minerEnv.clusterNum:
                 reward -= 1000
-            else:
-                if minerEnv.currentCluster is not None:
-                    if minerEnv.sorted_cluster_list[clusterId]._id != minerEnv.currentCluster._id:
-                        reward -= 500
-                if minerEnv.targetCluster is not None:
-                    if minerEnv.sorted_cluster_list[clusterId]._id != minerEnv.targetCluster._id:
-                        reward -= 1000
+            # else:
+            #     if minerEnv.currentCluster is not None:
+            #         if minerEnv.sorted_cluster_list[clusterId]._id != minerEnv.currentCluster._id:
+            #             reward -= 500
+            #     if minerEnv.targetCluster is not None:
+            #         if minerEnv.sorted_cluster_list[clusterId]._id != minerEnv.targetCluster._id:
+            #             reward -= 1000
             current_cluster = clusterId
 
             agentState = minerEnv.get_agent_state(clusterId)
@@ -222,7 +222,8 @@ for episode_i in range(0, N_EPISODE):
             episode_i + 1, count_step + 1, total_reward, DQNAgent.epsilon, minerEnv.check_terminate()))
         # Decreasing the epsilon if the replay starts
         if train == True:
-            DQNAgent.update_epsilon()
+            if episode_i % 5 == 0:
+                DQNAgent.update_epsilon()
             count_step += 1
             # if count_step > 33:
             #     break
