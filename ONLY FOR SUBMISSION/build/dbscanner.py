@@ -141,7 +141,6 @@ class Cluster:
             if mahattan(self.center_x, self.center_y, player["posx"], player["posy"]) <= EPS:
                 countEnermy += 1
         return countEnermy
-        
 
 
 # if __name__ == "__main__":
