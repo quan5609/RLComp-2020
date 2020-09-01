@@ -118,19 +118,16 @@ class Agent_8_8:
                     energyOfBest = energy
                     goldPos = gold
 
-                # print("-------------------------")
-        # print("Best action:", bestAction, energyOfBest)
-        if not self.isSleeping and energyOfBest <= 0:
-            self.isSleeping = True
+        if self.isSleeping:
+            if self.state.energy >= 36 and energyOfBest > 0:
+                self.isSleeping = False
+                return bestAction, goldPos
             return 4, goldPos
-        elif self.isSleeping:
-            if bestAction != 5 and self.state.energy < 32:
+        else:
+            if energyOfBest <= 0:
+                self.isSleeping = True
                 return 4, goldPos
-            elif bestAction == 5 and self.state.energy < 28:
-                return 4, goldPos
-        self.isSleeping = False
-
-        return bestAction, goldPos
+            return bestAction, goldPos
 
     def estimatePathCost(self, startx, starty, endx, endy):
         # print(self.state.mapInfo.map)

@@ -4,6 +4,7 @@ import sys
 from agent_8_8 import Agent_8_8
 from agent_11_8 import Agent_11_8
 from agent_dummy import Agent_Dummy
+from agent_bot3 import Agent_Bot3
 import random
 from warnings import simplefilter
 
@@ -34,18 +35,12 @@ class BigAgent:
         self.agent_id = agentId
         self.info = PlayerInfo(self.agent_id)
         
-        self.strategy = [Agent_8_8(agentId), Agent_11_8(agentId), Agent_Dummy(agentId)]
+        # self.strategy = [Agent_8_8(agentId), Agent_11_8(agentId), Agent_Dummy(agentId)]
+        self.strategy = [Agent_8_8(agentId), Agent_Bot3(agentId), Agent_Bot3(Agent_Bot3), Agent_Dummy(agentId)]
         for agent in self.strategy:
             agent.info = self.info
         self.countStep = 0
         self.currentAgent = random.randint(0,3)
-        # self.state = State()
-        # self.isSleeping = False
-        # self.swampCount = -1
-        # self.sleepCount = -1
-        # self.sleepBonus = [12, 16, 25]
-        # # Storing the last score for designing the reward function
-        # self.score_pre = self.state.score
 
     def reset(self, message):  # start new game
         for agent in self.strategy:
@@ -63,7 +58,7 @@ class BigAgent:
 
     def step(self):  # step process
         if self.countStep % 10 == 0:
-            self.currentAgent = random.randint(0,2)
+            self.currentAgent = random.randint(0,3)
             # print("Debug multi-strategy: ", self.agent_id, self.currentAgent)
         action, goldPos = self.strategy[self.currentAgent].get_action()
         self.countStep += 1

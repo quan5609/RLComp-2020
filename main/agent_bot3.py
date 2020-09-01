@@ -20,16 +20,13 @@ class PlayerInfo:
         self.status = 0
         self.freeCount = 0
 
-class Agent_Dummy:
+class Agent_Bot3:
     def __init__(self, agentId):
         # self.socket = GameSocket(host, port)
         self.agent_id = agentId
         self.info = PlayerInfo(self.agent_id)
         self.state = State()
         self.isSleeping = False
-        self.swampCount = -1
-        self.sleepCount = -1
-        self.sleepBonus = [12, 16, 25]
         # Storing the last score for designing the reward function
         self.score_pre = self.state.score
 
@@ -86,15 +83,19 @@ class Agent_Dummy:
             energyOfBest = self.state.energy - 5
             goldPos = {"posx": self.state.x, "posy": self.state.y, "amount": self.estimateReceivedGold(self.state.x, self.state.y)}
         else:
-            maxGoldCost = 10000
+            maxGoldAmount = 0
+            costToMaxGold = 10000
             goldMine = None
             for gold in self.state.mapInfo.golds:
+                goldAmount = gold["amount"]
                 goldCost = self.mahattan(self.state.x, self.state.y, gold["posx"], gold["posy"])
-                if maxGoldCost > goldCost:
-                    maxGoldCost = goldCost
+                if goldAmount > maxGoldAmount or (goldAmount == maxGoldAmount and goldCost < costToMaxGold):
+                    maxGoldAmount = goldAmount
+                    costToMaxGold = goldCost
                     goldMine = gold
             if goldMine == None:
                 return 4, {"posx": self.state.x, "posy": self.state.y, "amount": 0}
+
             pathCost = 10000
             for action in actions:
                 posx, posy, energy = self.get_successor(action)
@@ -116,17 +117,19 @@ class Agent_Dummy:
             return bestAction, goldPos
 
     def estimatePathCost(self, startx, starty, endx, endy):
-        # print(self.state.mapInfo.map)
         hstep = 1 if endx > startx else -1
         vstep = 1 if endy > starty else -1
         i, j = startx, starty
         totalCostHL, totalCostLH = 0, 0
+        hGold, vGold = 0, 0
         # ngang roi doc
         hcost, vcost = 0, 0
         # print("ngang roi doc")
         while(True):
             # print("Debug", i, j, self.state.mapInfo.get_cell_cost(i, j))
             hcost += self.state.mapInfo.get_cell_cost(i, j)
+            if self.state.mapInfo.gold_amount(i, j) > 0:
+                hGold += self.state.mapInfo.gold_amount(i, j)
             if i == endx:
                 break
             i += hstep
@@ -137,10 +140,13 @@ class Agent_Dummy:
             while(True):
                 # print("Debug", i, j, self.state.mapInfo.get_cell_cost(i, j))
                 vcost += self.state.mapInfo.get_cell_cost(i, j)
+                if self.state.mapInfo.gold_amount(i, j) > 0:
+                    hGold += self.state.mapInfo.gold_amount(i, j)
                 if j == endy:
                     break
                 j += vstep
             totalCostHL = hcost + vcost
+        totalCostHL = max(0, totalCostHL - hGold//20)
 
         # doc roi ngang
         # print("doc roi ngang")
@@ -149,6 +155,8 @@ class Agent_Dummy:
         while(True):
             # print("Debug", i, j, self.state.mapInfo.get_cell_cost(i, j))
             vcost += self.state.mapInfo.get_cell_cost(i, j)
+            if self.state.mapInfo.gold_amount(i, j) > 0:
+                vGold += self.state.mapInfo.gold_amount(i, j)
             if j == endy:
                 break
             j += vstep
@@ -159,11 +167,13 @@ class Agent_Dummy:
             while(True):
                 # print("Debug", i, j, self.state.mapInfo.get_cell_cost(i, j))
                 hcost += self.state.mapInfo.get_cell_cost(i, j)
+                if self.state.mapInfo.gold_amount(i, j) > 0:
+                    vGold += self.state.mapInfo.gold_amount(i, j)
                 if i == endx:
                     break
                 i += hstep
             totalCostLH = hcost + vcost
-
+        totalCostLH = max(0, totalCostLH - bGold//20)
         return min(totalCostHL, totalCostLH)
 
     def check_terminate(self):

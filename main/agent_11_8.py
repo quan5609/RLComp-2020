@@ -199,17 +199,16 @@ class Agent_11_8:
             goldPos = {"posx": self.state.x, "posy": self.state.y,
                        "amount": self.estimateReceivedGold(self.state.x, self.state.y)}
 
-        if not self.isSleeping and energyOfBest <= 0:
-            self.isSleeping = True
+        if self.isSleeping:
+            if self.state.energy >= 36 and energyOfBest > 0:
+                self.isSleeping = False
+                return bestAction, goldPos
             return 4, goldPos
-        elif self.isSleeping:
-            if bestAction != 5 and self.state.energy < 32:
+        else:
+            if energyOfBest <= 0:
+                self.isSleeping = True
                 return 4, goldPos
-            elif bestAction == 5 and self.state.energy < 28:
-                return 4, goldPos
-        self.isSleeping = False
-
-        return bestAction, goldPos
+            return bestAction, goldPos
 
     def estimatePathCost(self, startx, starty, endx, endy):
         hstep = 1 if endx > startx else -1
