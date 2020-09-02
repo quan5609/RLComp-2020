@@ -24,11 +24,15 @@ class PlayerInfo:
 
 
 class Agent_8_8:
-    def __init__(self, agentId):
+    def __init__(self, agentId=None, state=None):
         # self.socket = GameSocket(host, port)
-        self.agent_id = agentId
-        self.info = PlayerInfo(self.agent_id)
-        self.state = State()
+        if agentId:
+            self.agent_id = agentId
+            self.info = PlayerInfo(self.agent_id)
+        if state:
+            self.state = state
+        else:
+            self.state = State()
         self.isSleeping = False
         self.swampCount = -1
         self.sleepCount = -1

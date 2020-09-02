@@ -52,7 +52,7 @@ MAX_STEP = 1000  # The number of steps for each episode
 BATCH_SIZE = 8  # The number of experiences for each replay
 MEMORY_SIZE = 100000  # The size of the batch for storing experiences
 # After this number of episodes, the DQN model is saved for testing later.
-SAVE_NETWORK = 500
+SAVE_NETWORK = 100
 # The number of experiences are stored in the memory batch before starting replaying
 INITIAL_REPLAY_SIZE = 200
 INPUTNUM = 106  # The number of input values for the DQN model
@@ -174,11 +174,11 @@ for episode_i in range(0, N_EPISODE):
 
         final_gold = minerEnv.state.score
         print("Final Gold:", final_gold, len(episode_memory))
-        total_reward += count_step*(final_gold//4)
+        total_reward += count_step*(final_gold//100)
 
         for mem_record in episode_memory:
             current_state, current_cluster, reward, terminate, s = mem_record
-            reward += final_gold//4
+            reward += final_gold//100
             memory.push(current_state, current_cluster,
                         reward, terminate, s)
             # Sample batch memory to train network

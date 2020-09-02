@@ -4,6 +4,8 @@ import numpy as np
 from MinerEnv import MinerEnv
 import sys
 from warnings import simplefilter
+from best_3 import Best_3
+from best_2_4 import Best_2_4
 simplefilter(action='ignore', category=FutureWarning)
 
 
@@ -39,6 +41,10 @@ count_step = 0
 
 prevAction = - 1
 prevGoldPos = None
+init_pos_1_5 = [[16, 0], [3, 3]]
+init_pos_2_4 = [[13, 5], [8, 8]]
+init_pos_3 = [[9, 1]]
+agentId = 0
 
 try:
     # Initialize environment
@@ -46,43 +52,111 @@ try:
     minerEnv.start()  # Connect to the game
 
     minerEnv.reset()
-    print(minerEnv.state.mapInfo.golds)
+    initial = [minerEnv.state.x, minerEnv.state.y]
+    print("Initial:", initial)
+    if initial in init_pos_2_4:
+        agentId = 1
 
-    s = minerEnv.get_state()  # Getting an initial state
-    while not minerEnv.check_terminate():
-        try:
-            if minerEnv.check_mining():
+    elif initial in init_pos_3:
+        agentId = 2
+
+    if agentId == 0:
+        s = minerEnv.get_state()  # Getting an initial state
+        while not minerEnv.check_terminate():
+            try:
+                if minerEnv.check_mining():
+                    action, goldPos = minerEnv.get_action()
+                    # print("Debug action", action)
+                    minerEnv.step(str(action))
+                    # prevAction = action
+                    # prevGoldPos = goldPos
+                    # reward += minerEnv.get_reward()
+                    s = minerEnv.get_state()
+                    # count_step += 1
+                    continue
+
+                # current_state = s
+                # print("State:", s)
+                clusterId = np.argmax(DQNAgent.predict(s.reshape(1, len(s))))
+                # current_cluster = clusterId
+
+                agentState = minerEnv.get_agent_state(clusterId)
                 action, goldPos = minerEnv.get_action()
                 # print("Debug action", action)
                 minerEnv.step(str(action))
-                # prevAction = action
-                # prevGoldPos = goldPos
-                # reward += minerEnv.get_reward()
-                s = minerEnv.get_state()
+                s = minerEnv.get_state()  # Getting a new state
+                ''' Get reward '''
+                # reward += minerEnv.get_reward()  # Getting a reward
                 # count_step += 1
-                continue
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                print("Finished.")
+                break
+        minerEnv.end()
+        print("After finish:\n\tEnd status: %s\n\tTotal step: %d" %
+              (status_map[minerEnv.state.status], count_step))
 
-            # current_state = s
-            # print("State:", s)
-            clusterId = np.argmax(DQNAgent.predict(s.reshape(1, len(s))))
-            # current_cluster = clusterId
+    elif agentId == 1:
+        while not minerEnv.check_terminate():
+            try:
+                print(
+                    "#################################################################")
+                print("BEST 2 4")
+                virtual_agent = Best_2_4(state=minerEnv.state)
+                action, goldPos = virtual_agent.get_action()
+                if(action == 0 and prevAction == 1) or (action == 1 and prevAction == 0) or (action == 2 and prevAction == 3) or (action == 3 and prevAction == 2):
+                    print("Prev gold: ", prevGoldPos)
+                    print("current gold: ", goldPos)
 
-            agentState = minerEnv.get_agent_state(clusterId)
-            action, goldPos = minerEnv.get_action()
-            # print("Debug action", action)
-            minerEnv.step(str(action))
-            s = minerEnv.get_state()  # Getting a new state
-            ''' Get reward '''
-            # reward += minerEnv.get_reward()  # Getting a reward
-            # count_step += 1
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
-            print("Finished.")
-            break
-    minerEnv.end()
-    print("After finish:\n\tEnd status: %s\n\tTotal step: %d" %
-          (status_map[minerEnv.state.status], count_step))
+                print("At step %d:\n\tCurrent gold: %d\n\tCurrent energy: %d\n\tAction: %s" % (
+                    count_step, minerEnv.state.score, minerEnv.state.energy, action_map[action]))
+                minerEnv.step(str(action))
+                prevAction = action
+                prevGoldPos = goldPos
+                # s_next = minerEnv.get_state()  # Getting a new state
+                # s = s_next
+                count_step += 1
+                # if count_step > 33:
+                #     break
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                print("Finished.")
+                break
+        minerEnv.end()
+        print("After finish:\n\tEnd status: %s\n\tTotal step: %d" %
+              (status_map[minerEnv.state.status], count_step))
+    else:
+        while not minerEnv.check_terminate():
+            try:
+                print(
+                    "#################################################################")
+                print("BEST 3")
+                virtual_agent = Best_3(state=minerEnv.state)
+                action, goldPos = virtual_agent.get_action()
+                if(action == 0 and prevAction == 1) or (action == 1 and prevAction == 0) or (action == 2 and prevAction == 3) or (action == 3 and prevAction == 2):
+                    print("Prev gold: ", prevGoldPos)
+                    print("current gold: ", goldPos)
+
+                print("At step %d:\n\tCurrent gold: %d\n\tCurrent energy: %d\n\tAction: %s" % (
+                    count_step, minerEnv.state.score, minerEnv.state.energy, action_map[action]))
+                minerEnv.step(str(action))
+                prevAction = action
+                prevGoldPos = goldPos
+                # s_next = minerEnv.get_state()  # Getting a new state
+                # s = s_next
+                count_step += 1
+                # if count_step > 33:
+                #     break
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                print("Finished.")
+                break
+        minerEnv.end()
+        print("After finish:\n\tEnd status: %s\n\tTotal step: %d" %
+              (status_map[minerEnv.state.status], count_step))
 
 except Exception as e:
     import traceback

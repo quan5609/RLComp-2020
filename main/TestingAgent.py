@@ -58,6 +58,8 @@ try:
     # Send the request to the game environment (GAME_SOCKET_DUMMY.py)
     minerEnv.send_map_info(request)
     minerEnv.reset()
+    initial = [minerEnv.state.x, minerEnv.state.y]
+    print(initial)
     # print(minerEnv.state.mapInfo.golds)
 
     s = minerEnv.get_state()  # Getting an initial state

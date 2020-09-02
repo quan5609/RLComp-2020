@@ -32,10 +32,14 @@ class PlayerInfo:
 
 
 class Agent_11_8:
-    def __init__(self, agentId):
-        self.agent_id = agentId
-        self.info = PlayerInfo(self.agent_id)
-        self.state = State()
+    def __init__(self, agentId=None, state=None):
+        if agentId:
+            self.agent_id = agentId
+            self.info = PlayerInfo(self.agent_id)
+        if state:
+            self.state = state
+        else:
+            self.state = State()
         self.isSleeping = False
         self.swampCount = -1
         self.sleepCount = -1
@@ -136,7 +140,6 @@ class Agent_11_8:
         actions = self.legalAction()
         goldAmountAtCurrentPosition = self.estimateReceivedGold(
             self.state.x, self.state.y)
-
 
         ''' CHANGE STATE '''
         if self.agentState == AgentState.GOCLUSTER:

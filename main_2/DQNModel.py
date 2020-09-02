@@ -52,14 +52,14 @@ class DQN:
     def load_model(self):
         # load json and create model
         json_file = open(
-            '/home/quan/RLComp-2020/main/TrainedModels/DQNmodel_latest.json', 'r')
+            'TrainedModels/DQNmodel_latest.json', 'r')
         loaded_model_json = json_file.read()
         json_file.close()
         loaded_model = model_from_json(loaded_model_json)
         # print(loaded_model.get_weights())
         # load weights into new model
         loaded_model.load_weights(
-            "/home/quan/RLComp-2020/main/TrainedModels/DQNmodel_latest.h5")
+            "TrainedModels/DQNmodel_latest.h5")
         # print(loaded_model.get_weights())
         # model = self.create_model()
         # print(loaded_model.summary())
