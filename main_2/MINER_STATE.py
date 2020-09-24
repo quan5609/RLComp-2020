@@ -152,7 +152,7 @@ class State:
         game_info = str_2_json(data)
         self.end = False
         self.score = 0
-        self.lastAction = None
+        self.lastAction = -1
         self.id = game_info["playerId"]
         self.x = game_info["posx"]
         self.y = game_info["posy"]
@@ -162,7 +162,8 @@ class State:
         self.status = State.STATUS_PLAYING
         # self.players = []
         self.players = [{"playerId": 2, "posx": self.x, "posy": self.y, "energy": self.energy, "score": 0, "lastAction": -1, "status": State.STATUS_PLAYING},
-                        {"playerId": 3, "posx": self.x, "posy": self.y,  "energy": self.energy, "score": 0, "lastAction": -1, "status": State.STATUS_PLAYING},
+                        {"playerId": 3, "posx": self.x, "posy": self.y,  "energy": self.energy,
+                            "score": 0, "lastAction": -1, "status": State.STATUS_PLAYING},
                         {"playerId": 4, "posx": self.x, "posy": self.y,  "energy": self.energy, "score": 0, "lastAction": -1, "status": State.STATUS_PLAYING}]
 
     def update_state(self, data):
@@ -187,4 +188,3 @@ class State:
         #     self.players.append(
         #         {"playerId": i, "posx": self.x, "posy": self.y})
         self.stepCount = self.stepCount + 1
-

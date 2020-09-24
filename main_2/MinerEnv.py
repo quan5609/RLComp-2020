@@ -43,6 +43,8 @@ class MinerEnv:
         self.clusterNum = 0
         self.sorted_cluster_list = None
 
+        self.new_decision = False
+
     def start(self):  # connect to server
         self.socket.connect()
 
@@ -132,10 +134,17 @@ class MinerEnv:
             self.sorted_cluster_list[id], self.state.x, self.state.y)
         return destinationx, destinationy, self.sorted_cluster_list[id]
 
-    def findBestCluster(self, agentCluster):
+    def findBestCluster(self, agentCluster, mapId=None):
+        self.new_decision = True
         if agentCluster is not None and agentCluster < self.clusterNum:
             # print("BUG", agentCluster, self.clusterNum)
-            return self.getClusterByIndex(self.state.mapInfo.clusterList, agentCluster)
+            desx, desy, resultCluster = self.getClusterByIndex(
+                self.state.mapInfo.clusterList, agentCluster)
+            if mapId != 3:
+                return desx, desy, resultCluster
+            if self.mahattan(desx, desy, self.state.x, self.state.y) < 16:
+                return desx, desy, resultCluster
+
         bestCluster = None
         globalClusterScore = -1
         bestDestinationx, bestDestinationy = 0, 0
@@ -236,39 +245,40 @@ class MinerEnv:
         # print("Curent State:", current_cluster_state)
         # print("Target State:", target_cluster_state)
         # print("Cluster State:", cluster_state)
-
+        # print(cluster_state)
         DQNState = player_state + cluster_state + \
             target_cluster_state + current_cluster_state
         return np.array(DQNState)
 
     def get_reward(self):
         score = 0
-        # print(self.targetCluster, self.currentCluster, self.agentState)
-        if self.agentState == AgentState.GOCLUSTER:
-            score += self.get_cluster_score(self.targetCluster)
-        elif self.agentState == AgentState.INCLUSTER:
-            score += self.get_cluster_score(self.currentCluster)
-        delta = self.state.score - self.score_pre
-        self.score_pre = self.state.score
-        if delta == 0:
-            delta -= 5
-        return 5 * delta
+        # # print(self.targetCluster, self.currentCluster, self.agentState)
+        # if self.agentState == AgentState.GOCLUSTER:
+        #     score += self.get_cluster_score(self.targetCluster)
+        # elif self.agentState == AgentState.INCLUSTER:
+        #     score += self.get_cluster_score(self.currentCluster)
+        # delta = self.state.score - self.score_pre
+        # self.score_pre = self.state.score
+        # if delta == 0:
+        #     delta -= 5
+        # # return 5 * delta
+        return 0
 
     def check_mining(self):
         goldAmountAtCurrentPosition = self.estimateReceivedGold(
             self.state.x, self.state.y)
-        if goldAmountAtCurrentPosition >= 50:
+        if goldAmountAtCurrentPosition >= 25:
             self.agentState = AgentState.MINING
             return True
         return False
 
-    def get_agent_state(self,  agentCluster=None):
+    def get_agent_state(self,  agentCluster=None, mapId=None):
         # print("XY:", self.state.x, self.state.y, self.agentState)
         if len(self.state.mapInfo.golds) == 0:
             return 4, {"posx": self.state.x, "posy": self.state.y, "amount": 0}
         goldAmountAtCurrentPosition = self.estimateReceivedGold(
             self.state.x, self.state.y)
-        if goldAmountAtCurrentPosition >= 50:
+        if goldAmountAtCurrentPosition >= 25:
             self.agentState = AgentState.MINING
             return self.agentState
 
@@ -276,7 +286,7 @@ class MinerEnv:
         if self.agentState == AgentState.GOCLUSTER:
             if self.targetCluster is None:
                 newDesx, newDesy, newCluster = self.findBestCluster(
-                    agentCluster)
+                    agentCluster, mapId)
                 self.targetCluster = newCluster
                 self.targetDesx, self.targetDesy = newDesx, newDesy
 
@@ -296,7 +306,7 @@ class MinerEnv:
             #       self.currentCluster.total_gold)
             if self.currentCluster.total_gold < 150:
                 newDesx, newDesy, newCluster = self.findBestCluster(
-                    agentCluster)
+                    agentCluster, mapId)
                 if newCluster._id != self.currentCluster._id:
                     self.agentState = AgentState.GOCLUSTER
                     self.currentCluster = None
@@ -310,7 +320,7 @@ class MinerEnv:
             #         self.agentState = AgentState.GOCLUSTER
             #         self.currentCluster = None
         elif self.agentState == AgentState.MINING:
-            if goldAmountAtCurrentPosition < 50:
+            if goldAmountAtCurrentPosition < 25:
                 if self.targetDesx == self.state.x and self.targetDesy == self.state.y:
                     # print("XY:", self.state.x, self.state.x)
                     self.agentState = AgentState.INCLUSTER
@@ -323,7 +333,7 @@ class MinerEnv:
 
                 elif self.currentCluster is not None and self.currentCluster.total_gold <= 100:
                     newDesx, newDesy, newCluster = self.findBestCluster(
-                        agentCluster)
+                        agentCluster, mapId)
                     if newCluster._id != self.currentCluster._id:
                         self.agentState = AgentState.GOCLUSTER
                         self.currentCluster = None
@@ -407,7 +417,14 @@ class MinerEnv:
             #            "amount": self.estimateReceivedGold(self.state.x, self.state.y)}
 
         if self.isSleeping:
-            if self.state.energy >= 36 and energyOfBest > 0:
+            limit = 36
+            map_total_gold = sum(
+                [cluster.total_gold for cluster in self.state.mapInfo.clusterList])
+            if map_total_gold < 400:
+                limit = 27
+            if self.agentState == AgentState.MINING and self.state.mapInfo.gold_amount(self.state.x, self.state.y) < 400 and len(self.estimateBotAtCurr(self.state.x, self.state.y)) > 0:
+                limit = 27
+            if self.state.energy >= limit and energyOfBest > 0:
                 self.isSleeping = False
                 return bestAction, goldPos
             return 4, goldPos
@@ -534,6 +551,16 @@ class MinerEnv:
                 distanceToGold = self.mahattan(
                     goldX, goldY, player["posx"], player["posy"])
                 if distanceToGold <= 3:
+                    countBot.append(distanceToGold)
+        return countBot
+
+    def estimateBotAtCurr(self, goldX, goldY):
+        countBot = []
+        for player in self.state.players:
+            if player["playerId"] != self.state.id:
+                distanceToGold = self.mahattan(
+                    goldX, goldY, player["posx"], player["posy"])
+                if distanceToGold <= 1:
                     countBot.append(distanceToGold)
         return countBot
 

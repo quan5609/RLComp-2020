@@ -54,9 +54,9 @@ MEMORY_SIZE = 100000  # The size of the batch for storing experiences
 # After this number of episodes, the DQN model is saved for testing later.
 SAVE_NETWORK = 100
 # The number of experiences are stored in the memory batch before starting replaying
-INITIAL_REPLAY_SIZE = 200
+INITIAL_REPLAY_SIZE = 100
 INPUTNUM = 106  # The number of input values for the DQN model
-ACTIONNUM = 8  # The number of actions output from the DQN model
+ACTIONNUM = 16  # The number of actions output from the DQN model
 MAP_MAX_X = 21  # Width of the Map
 MAP_MAX_Y = 9  # Height of the Map
 
@@ -89,10 +89,11 @@ for episode_i in range(0, N_EPISODE):
         memory = memory_list[mapID - 1]
         print("BUFFER ID:", memory.mapId)
         # Choosing a initial position of the DQN agent on X-axes randomly
-        posID_x = init_pos[mapID-1][0]
+        # posID_x = init_pos[mapID-1][0]
+        posID_x = np.random.randint(MAP_MAX_X)
         # Choosing a initial position of the DQN agent on Y-axes randomly
-        # posID_y = np.random.randint(MAP_MAX_Y)
-        posID_y = init_pos[mapID-1][1]
+        posID_y = np.random.randint(MAP_MAX_Y)
+        # posID_y = init_pos[mapID-1][1]
         # Creating a request for initializing a map, initial position, the initial energy, and the maximum number of steps of the DQN agent
         request = ("map" + str(mapID) + "," + str(posID_x) +
                    "," + str(posID_y) + ",50,100")
@@ -121,41 +122,34 @@ for episode_i in range(0, N_EPISODE):
                 count_step += 1
                 continue
 
-            if current_state is not None:
+            if current_state is not None and minerEnv.new_decision:
                 # Add this transition to the memory batch
                 # if len(current_state) < 48 or len(s) < 48:
                 #     print(s)
                 episode_memory.append(
                     [current_state, current_cluster, reward, minerEnv.check_terminate(), s])
                 # Plus the reward to the total rewad of the episode
+                minerEnv.new_decision = False
                 total_reward = total_reward + reward
                 reward = 0
-                # s = s_next  # Assign the next state for the next step.
-
-                # Saving data to file
-                # save_data = np.hstack(
-                #     [episode_i + 1, count_step + 1, reward, total_reward, current_cluster, DQNAgent.epsilon, minerEnv.check_terminate()]).reshape(1, 7)
-                # with open(filename, 'a') as f:
-                #     pd.DataFrame(save_data).to_csv(
-                #         f, encoding='utf-8', index=False, header=False)
 
                 if minerEnv.check_terminate() == True:
                     # If the episode ends, then go to the next episode
                     break
-
             current_state = s
             # print("State:", s)
             clusterId = DQNAgent.act(s)
 
             if clusterId >= minerEnv.clusterNum:
-                reward -= 1000
-            # else:
-            #     if minerEnv.currentCluster is not None:
-            #         if minerEnv.sorted_cluster_list[clusterId]._id != minerEnv.currentCluster._id:
-            #             reward -= 500
-            #     if minerEnv.targetCluster is not None:
-            #         if minerEnv.sorted_cluster_list[clusterId]._id != minerEnv.targetCluster._id:
-            #             reward -= 1000
+                reward -= 50
+            else:
+                desx, desy, _ = minerEnv.getClusterByIndex(
+                    minerEnv.state.mapInfo.clusterList, clusterId)
+                distance = abs(minerEnv.state.x - desx) + \
+                    abs(minerEnv.state.y-desy)
+                if distance >= 10:
+                    reward -= 50
+
             current_cluster = clusterId
 
             agentState = minerEnv.get_agent_state(clusterId)
@@ -174,11 +168,11 @@ for episode_i in range(0, N_EPISODE):
 
         final_gold = minerEnv.state.score
         print("Final Gold:", final_gold, len(episode_memory))
-        total_reward += count_step*(final_gold//100)
+        total_reward += count_step*(final_gold//50)
 
         for mem_record in episode_memory:
             current_state, current_cluster, reward, terminate, s = mem_record
-            reward += final_gold//100
+            reward += final_gold//50
             memory.push(current_state, current_cluster,
                         reward, terminate, s)
             # Sample batch memory to train network

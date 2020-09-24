@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from random import random, randrange
 import tensorflow as tf
+import keras
 from keras import backend as K
 from keras import optimizers
 from keras.layers import Dense, Activation
@@ -71,25 +72,54 @@ class DQN:
         return loaded_model
 
     def create_model(self):
+        def get_residual_block(inp, filter=64, is_max_pool=True):
+            conv1 = keras.layers.Conv1D(
+                filter, kernel_size=5, activation=keras.activations.relu, padding="same")(inp)
+            conv2 = keras.layers.Conv1D(
+                filter, kernel_size=5, activation=keras.activations.relu, padding="same")(conv1)
+            skip_connect = keras.layers.Add()([inp, conv2])
+            relu2 = keras.layers.ReLU()(skip_connect)
+            if is_max_pool:
+                max_pool = keras.layers.MaxPool1D(pool_size=2)(relu2)
+                batch_norm = keras.layers.BatchNormalization(
+                    trainable=True, epsilon=1e-4)(max_pool)
+            else:
+                batch_norm = keras.layers.BatchNormalization(
+                    trainable=True, epsilon=1e-4)(relu2)
+
+            return batch_norm
         # Creating the network
         # Two hidden layers (300,300), their activation is ReLu
         # One output layer with action_space of nodes, activation is linear.
-        model = Sequential()
-        model.add(Dense(300, input_dim=self.input_dim))
-        model.add(Activation('relu'))
-        model.add(Dense(300))
-        model.add(Activation('relu'))
-        model.add(Dense(self.action_space))
-        model.add(Activation('linear'))
+
+        inp = keras.layers.Input(shape=(106, 1))
+        conv1 = keras.layers.Conv1D(
+            64, kernel_size=5, activation=keras.activations.relu, padding="same")(inp)
+        res_block1 = get_residual_block(conv1)
+        res_block2 = get_residual_block(res_block1, 64, False)
+        res_block3 = get_residual_block(res_block2, filter=64)
+        res_block4 = get_residual_block(res_block3, 64, False)
+        res_block5 = get_residual_block(res_block4, filter=64)
+
+        glopal_pool = keras.layers.GlobalMaxPool1D()(res_block5)
+        dropout = keras.layers.Dropout(rate=0.2)(glopal_pool)
+        dense1 = keras.layers.Dense(
+            64, activation=keras.activations.relu)(dropout)
+        dropout1 = keras.layers.Dropout(rate=0.2)(dense1)
+        dense2 = keras.layers.Dense(
+            128, activation=keras.activations.relu)(dropout1)
+        dropout2 = keras.layers.Dropout(rate=0.2)(dense2)
+        dense3 = keras.layers.Dense(16, activation='tanh')(dropout2)
+        model = keras.models.Model(inputs=inp, outputs=dense3)
+        model.summary()
         #adam = optimizers.adam(lr=self.learning_rate)
         sgd = optimizers.SGD(lr=self.learning_rate, decay=1e-6, momentum=0.95)
-        model.compile(optimizer=sgd,
-                      loss='mse')
+        model.compile(optimizer=sgd, loss='mse')
         return model
 
     def act(self, state):
         # Get the index of the maximum Q values
-        a_max = np.argmax(self.model.predict(state.reshape(1, len(state))))
+        a_max = np.argmax(self.model.predict(state.reshape(1, len(state), 1)))
         if (random() < self.epsilon):
             a_chosen = randrange(self.action_space)
         else:
@@ -98,11 +128,13 @@ class DQN:
 
     def DQN_predict(self, state):
         # Get the index of the maximum Q values
-        return self.model.predict(state.reshape(1, len(state)))
+        return self.model.predict(state.reshape(1, len(state), 1))
 
     def replay(self, samples, batch_size):
+        # print("######################################")
         inputs = np.zeros((batch_size, self.input_dim))
         targets = np.zeros((batch_size, self.action_space))
+        currents = np.zeros((batch_size, self.action_space))
 
         for i in range(0, batch_size):
             state = samples[0][i, :]
@@ -113,16 +145,26 @@ class DQN:
 
             inputs[i, :] = state
             targets[i, :] = self.target_model.predict(
-                state.reshape(1, len(state)))
+                state.reshape(1, len(state), 1))
+            currents[i, :] = self.model.predict(
+                state.reshape(1, len(state), 1))
+            # print("state:", state, action)
+            # print("curr:", self.model.predict(
+            #     state.reshape(1, len(state), 1)))
             if done:
                 # if terminated, only equals reward
                 targets[i, action] = reward
             else:
                 Q_future = np.max(self.target_model.predict(
-                    new_state.reshape(1, len(new_state))))
+                    new_state.reshape(1, len(new_state), 1)))
                 targets[i, action] = reward + Q_future * self.gamma
         # Training
-        loss = self.model.train_on_batch(inputs, targets)
+        # print("INPUT", inputs, inputs.shape)
+        # print("TARGET", targets, targets.shape)
+        # print("Current Q", currents)
+
+        loss = self.model.train_on_batch(np.array(inputs).reshape(
+            batch_size, self.input_dim, 1), np.array(targets).reshape(batch_size, self.action_space))
 
     def target_train(self):
         weights = self.model.get_weights()
